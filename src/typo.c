@@ -1,62 +1,46 @@
+#define NCURSES_WIDECHAR 1
+
+#include <curses.h>
+#include <locale.h>
 #include <ncurses.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <wchar.h>
 
-int main() {
+FILE *read_file(char *argv);
+void close_file(FILE *file_path);
+
+int main(int argc, char *argv[]) {
+  setlocale(LC_ALL, "pt_BR");
+
+  // TODO: Try this one later
+  // setlocale(LC_ALL, "UTF-8");
+
+  FILE *file_path = read_file(argv[1]);
+
   initscr();
   cbreak();
   noecho();
 
-  int number_of_lines = 9;
-
-  int y_cursor_pos = 0;
-  int x_cursor_pos = 0;
-
-  int y_padding = 3;
-  int x_padding = 3;
-
-  int y, x;
-
-  mvaddstr(0, x_padding, "qualquer coisa pra testar se isso aqui funciona!");
-
-  move(y_cursor_pos, x_cursor_pos);
-
-  for (int i = 0; i <= number_of_lines; i++) {
-    mvprintw(i, 0, "%d", i);
-  }
-
-  move(0, x_padding);
-
-  while (true) {
-    char input = getch();
-
-    char value = mvinch(y_cursor_pos, x_cursor_pos + x_padding) & A_CHARTEXT;
-
-    addch(input);
-
-    // Debug purposes
-    mvaddstr(22, 20, &input);
-    mvaddstr(23, 20, &value);
-
-    move(y_cursor_pos, x_cursor_pos + x_padding);
-
-    if (input != value) {
-      mvaddstr(20, 20, "errado");
-      move(y_cursor_pos, x_cursor_pos + x_padding);
-    } else if (input == value) {
-      mvaddstr(20, 20, "certo");
-      move(y_cursor_pos, x_cursor_pos + x_padding);
-    }
-
-    x_cursor_pos++;
-    move(y_cursor_pos, x_cursor_pos + x_padding);
-
-    if (input == '0')
-      break;
-  }
-
+  getch();
   endwin();
+  close_file(file_path);
 
   return 0;
+}
+
+FILE *read_file(char *argv) {
+  FILE *file_path;
+
+  if ((file_path = fopen(argv, "r")) == NULL) {
+    printf("Não foi posspivel abrir o arquivo!\n");
+    exit(1);
+  }
+
+  return file_path;
+}
+
+void close_file(FILE *file_path) {
+  fclose(file_path);
+  printf("file closed\n");
 }
