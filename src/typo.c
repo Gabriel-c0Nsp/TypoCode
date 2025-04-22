@@ -7,9 +7,6 @@
 #include <stdlib.h>
 #include <wchar.h>
 
-int y_cursor_pos = 0;
-int x_cursor_pos = 0;
-
 // Doubly linked list to store file buffer
 typedef struct BF_Node {
   wchar_t file_char;
@@ -21,10 +18,15 @@ BF_Node *create_node(wchar_t file_char);
 void insert_buffer(BF_Node **buffer, wchar_t file_char);
 void clean_buffer(BF_Node **buffer);
 
-FILE *read_file(char *argv);
+FILE *open_file(char *argv);
 void close_file(FILE *file_path);
 
+void store_file_buffer(BF_Node **buffer, FILE *file);
+
 void display_buffer(BF_Node *buffer);
+
+int y_cursor_pos = 0;
+int x_cursor_pos = 0;
 
 int main(int argc, char *argv[]) {
   setlocale(LC_ALL, "pt_BR");
@@ -32,7 +34,7 @@ int main(int argc, char *argv[]) {
   // TODO: Try this one later
   // setlocale(LC_ALL, "UTF-8");
 
-  FILE *file_path = read_file(argv[1]);
+  FILE *file_path = open_file(argv[1]);
 
   initscr();
   cbreak();
@@ -91,7 +93,7 @@ void clean_buffer(BF_Node **buffer) {
   *buffer = NULL;
 }
 
-FILE *read_file(char *argv) {
+FILE *open_file(char *argv) {
   FILE *file_path;
 
   if ((file_path = fopen(argv, "r")) == NULL) {
@@ -105,6 +107,16 @@ FILE *read_file(char *argv) {
 void close_file(FILE *file_path) {
   fclose(file_path);
   printf("file closed\n");
+}
+
+void store_file_buffer(BF_Node **buffer, FILE *file) {
+  wchar_t file_char;
+
+  do {
+    file_char = getc(file);
+
+    insert_buffer(buffer, file_char);
+  } while (file_char != EOF);
 }
 
 void display_buffer(BF_Node *buffer) {
