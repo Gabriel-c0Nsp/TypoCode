@@ -71,7 +71,6 @@ BF_Node *create_node(wchar_t file_char) {
   return new_node;
 }
 
-// TODO: Implement a linked list where list points to the last value
 void insert_buffer(BF_Node **buffer, wchar_t file_char) {
   BF_Node *new_node = create_node(file_char);  
 
@@ -105,7 +104,14 @@ void insert_buffer(BF_Node **buffer, wchar_t file_char) {
   // TODO: Test this later
 }
 
-// TODO: Implement
 void clean_buffer(BF_Node **buffer) {
+  BF_Node *temp = *buffer;
 
+  while (temp != NULL) {
+    BF_Node *prev = temp->prev;
+    free(temp);
+    temp = prev;
+  }
+
+  *buffer = NULL;
 }
