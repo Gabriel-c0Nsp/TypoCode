@@ -36,9 +36,14 @@ int main(int argc, char *argv[]) {
 
   FILE *file_path = open_file(argv[1]);
 
+  BF_Node *buffer = NULL;
+  store_file_buffer(&buffer, file_path);
+
   initscr();
   cbreak();
   noecho();
+
+  display_buffer(buffer);
 
   getch();
   endwin();
@@ -62,7 +67,6 @@ BF_Node *create_node(wchar_t file_char) {
   return new_node;
 }
 
-// TODO: Test this later
 void insert_buffer(BF_Node **buffer, wchar_t file_char) {
   BF_Node *new_node = create_node(file_char);  
 
@@ -106,7 +110,6 @@ FILE *open_file(char *argv) {
 
 void close_file(FILE *file_path) {
   fclose(file_path);
-  printf("file closed\n");
 }
 
 void store_file_buffer(BF_Node **buffer, FILE *file) {
@@ -127,7 +130,7 @@ void display_buffer(BF_Node *buffer) {
 
   BF_Node *temp = buffer;
 
-  while (temp != NULL) {
+  while (temp->next != NULL) {
     mvaddch(y_cursor_pos, x_cursor_pos, temp->file_char); 
     x_cursor_pos++;
 
