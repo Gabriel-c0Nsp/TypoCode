@@ -71,23 +71,9 @@ BF_Node *create_node(wchar_t file_char) {
   return new_node;
 }
 
+// TODO: Test this later
 void insert_buffer(BF_Node **buffer, wchar_t file_char) {
   BF_Node *new_node = create_node(file_char);  
-
-  // new node always refers to buffer
-  // buffer prev node refers to last added node (before new node)
-  // OBS: file buffer ended when buffer->next == NULL
-
-  /*
-           NULL                   new_node
-    || <- buffer -> ||   ==   || <- buffer -> ||
-
-           node                               new_node 
-    || <- buffer -> ||   ==   || <- node -> <- buffer -> ||
-                                                                   new_node
-    || <- node -> <- buffer -> ||   ==   || <- node -> <- node -> <- buffer -> ||
-
-  */
 
   if (*buffer == NULL) {
     *buffer = new_node;
@@ -96,21 +82,21 @@ void insert_buffer(BF_Node **buffer, wchar_t file_char) {
 
   BF_Node *temp = *buffer;
 
-  temp->next = new_node;
-  *buffer = new_node;
-  new_node->prev = temp;
+  while (temp->next != NULL) {
+    temp = temp->next;
+  }
 
-  // XXX: This should do the work
-  // TODO: Test this later
+  temp->next = new_node;
+  new_node->prev = temp;
 }
 
 void clean_buffer(BF_Node **buffer) {
   BF_Node *temp = *buffer;
 
   while (temp != NULL) {
-    BF_Node *prev = temp->prev;
+    BF_Node *next = temp->next;
     free(temp);
-    temp = prev;
+    temp = next;
   }
 
   *buffer = NULL;
