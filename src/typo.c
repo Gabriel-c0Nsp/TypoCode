@@ -7,6 +7,9 @@
 #include <stdlib.h>
 #include <wchar.h>
 
+int y_cursor_pos = 0;
+int x_cursor_pos = 0;
+
 // Doubly linked list to store file buffer
 typedef struct BF_Node {
   wchar_t file_char;
@@ -16,10 +19,12 @@ typedef struct BF_Node {
 
 BF_Node *create_node(wchar_t file_char);
 void insert_buffer(BF_Node **buffer, wchar_t file_char);
+void clean_buffer(BF_Node **buffer);
 
 FILE *read_file(char *argv);
 void close_file(FILE *file_path);
-void clean_buffer(BF_Node **buffer);
+
+void display_buffer(BF_Node *buffer);
 
 int main(int argc, char *argv[]) {
   setlocale(LC_ALL, "pt_BR");
@@ -38,22 +43,6 @@ int main(int argc, char *argv[]) {
   close_file(file_path);
 
   return 0;
-}
-
-FILE *read_file(char *argv) {
-  FILE *file_path;
-
-  if ((file_path = fopen(argv, "r")) == NULL) {
-    printf("Não foi posspivel abrir o arquivo!\n");
-    exit(1);
-  }
-
-  return file_path;
-}
-
-void close_file(FILE *file_path) {
-  fclose(file_path);
-  printf("file closed\n");
 }
 
 BF_Node *create_node(wchar_t file_char) {
@@ -100,4 +89,46 @@ void clean_buffer(BF_Node **buffer) {
   }
 
   *buffer = NULL;
+}
+
+FILE *read_file(char *argv) {
+  FILE *file_path;
+
+  if ((file_path = fopen(argv, "r")) == NULL) {
+    printf("Não foi posspivel abrir o arquivo!\n");
+    exit(1);
+  }
+
+  return file_path;
+}
+
+void close_file(FILE *file_path) {
+  fclose(file_path);
+  printf("file closed\n");
+}
+
+void display_buffer(BF_Node *buffer) {
+  move(0, 0);
+
+  int original_y_cu_pos = y_cursor_pos;
+  int original_x_cu_pos = x_cursor_pos;
+
+  BF_Node *temp = buffer;
+
+  while (temp != NULL) {
+    mvaddch(y_cursor_pos, x_cursor_pos, temp->file_char); 
+    x_cursor_pos++;
+
+    if (temp->file_char == '\n') {
+      y_cursor_pos++;   
+      x_cursor_pos = 0;
+    }
+    
+    temp = temp->next;
+  }
+
+  y_cursor_pos = original_y_cu_pos;
+  x_cursor_pos = original_x_cu_pos;
+
+  move(y_cursor_pos, x_cursor_pos);
 }
