@@ -24,6 +24,7 @@ void close_file(FILE *file_path);
 void store_file_buffer(BF_Node **buffer, FILE *file);
 
 void display_buffer(BF_Node *buffer);
+void exit_game(int exit_status, FILE *file_path);
 
 int y_cursor_pos = 0;
 int x_cursor_pos = 0;
@@ -146,4 +147,10 @@ void display_buffer(BF_Node *buffer) {
   x_cursor_pos = original_x_cu_pos;
 
   move(y_cursor_pos, x_cursor_pos);
+}
+void exit_game(int exit_status, FILE *file_path) {
+  endwin();
+  close_file(file_path);
+
+  exit(exit_status);
 }
