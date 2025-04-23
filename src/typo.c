@@ -128,6 +128,7 @@ void store_file_buffer(BF_Node **buffer, FILE *file) {
   } while (file_char != EOF);
 }
 
+// TODO: Insert '\n' characters to the end of the lines
 void draw_buffer(BF_Node *buffer) {
   clear();
   move(0, 0);
@@ -165,18 +166,14 @@ wchar_t get_user_input(FILE *file, BF_Node *buffer) {
 
   if (user_input == 27) exit_game(0, file);
 
-  if (user_input >= 32 || user_input <= 125) {
+  if (user_input >= 32 && user_input <= 125) {
     mvaddch(y_cursor_pos, x_cursor_pos, user_input);
     refresh();
     x_cursor_pos++;
-  }
-
-  // TODO: Handle user input backspace key
-  if (user_input == 127) {
-  }
-
-  // TODO: Handle user input '\n' case
-  if (user_input == '\n') {
+  } else if (user_input == 127) {
+    // TODO: Handle user input backspace key
+  } else if (user_input == '\n') {
+    // TODO: Handle user input '\n' case
   }
 
   return user_input;
