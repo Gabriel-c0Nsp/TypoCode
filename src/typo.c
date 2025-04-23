@@ -28,7 +28,7 @@ void draw_buffer(BF_Node *buffer);
 
 wchar_t get_user_input(FILE *file, BF_Node *buffer);
 
-void exit_game(int exit_status, FILE *file_path);
+void exit_game(int exit_status, FILE *file_path, BF_Node **buffer);
 
 
 int y_cursor_pos = 0;
@@ -164,7 +164,7 @@ void draw_buffer(BF_Node *buffer) {
 wchar_t get_user_input(FILE *file, BF_Node *buffer) {
   wchar_t user_input = getch();
 
-  if (user_input == 27) exit_game(0, file);
+  if (user_input == 27) exit_game(0, file, &buffer);
 
   if (user_input >= 32 && user_input <= 125) {
     mvaddch(y_cursor_pos, x_cursor_pos, user_input);
@@ -179,9 +179,10 @@ wchar_t get_user_input(FILE *file, BF_Node *buffer) {
   return user_input;
 }
 
-void exit_game(int exit_status, FILE *file_path) {
+void exit_game(int exit_status, FILE *file_path, BF_Node **buffer) {
   endwin();
   close_file(file_path);
+  clean_buffer(buffer);
 
   exit(exit_status);
 }
