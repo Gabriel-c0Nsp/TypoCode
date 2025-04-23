@@ -14,6 +14,7 @@ typedef struct BF_Node {
   struct BF_Node *prev;
 } BF_Node;
 
+
 BF_Node *create_node(wchar_t file_char);
 void insert_buffer(BF_Node **buffer, wchar_t file_char);
 void clean_buffer(BF_Node **buffer);
@@ -23,9 +24,12 @@ void close_file(FILE *file_path);
 
 void store_file_buffer(BF_Node **buffer, FILE *file);
 
-void display_buffer(BF_Node *buffer);
+void draw_buffer(BF_Node *buffer);
+
 wchar_t get_user_input(FILE *file, BF_Node *buffer);
+
 void exit_game(int exit_status, FILE *file_path);
+
 
 int y_cursor_pos = 0;
 int x_cursor_pos = 0;
@@ -45,11 +49,11 @@ int main(int argc, char *argv[]) {
   cbreak();
   noecho();
 
-  display_buffer(buffer);
+  draw_buffer(buffer);
 
-  getch();
-  endwin();
-  close_file(file_path);
+  while (true) {
+    wchar_t input = get_user_input(file_path, buffer);
+  }
 
   return 0;
 }
@@ -124,11 +128,15 @@ void store_file_buffer(BF_Node **buffer, FILE *file) {
   } while (file_char != EOF);
 }
 
-void display_buffer(BF_Node *buffer) {
+void draw_buffer(BF_Node *buffer) {
+  clear();
   move(0, 0);
 
   int original_y_cu_pos = y_cursor_pos;
   int original_x_cu_pos = x_cursor_pos;
+
+  y_cursor_pos = 0;
+  x_cursor_pos = 0;
 
   BF_Node *temp = buffer;
 
@@ -144,11 +152,14 @@ void display_buffer(BF_Node *buffer) {
     temp = temp->next;
   }
 
+  refresh();
+
   y_cursor_pos = original_y_cu_pos;
   x_cursor_pos = original_x_cu_pos;
 
   move(y_cursor_pos, x_cursor_pos);
 }
+
 wchar_t get_user_input(FILE *file, BF_Node *buffer) {
   wchar_t user_input = getch();
 
