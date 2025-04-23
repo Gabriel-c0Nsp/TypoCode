@@ -24,6 +24,7 @@ void close_file(FILE *file_path);
 void store_file_buffer(BF_Node **buffer, FILE *file);
 
 void display_buffer(BF_Node *buffer);
+wchar_t get_user_input(FILE *file, BF_Node *buffer);
 void exit_game(int exit_status, FILE *file_path);
 
 int y_cursor_pos = 0;
@@ -148,6 +149,28 @@ void display_buffer(BF_Node *buffer) {
 
   move(y_cursor_pos, x_cursor_pos);
 }
+wchar_t get_user_input(FILE *file, BF_Node *buffer) {
+  wchar_t user_input = getch();
+
+  if (user_input == 27) exit_game(0, file);
+
+  if (user_input >= 32 || user_input <= 125) {
+    mvaddch(y_cursor_pos, x_cursor_pos, user_input);
+    refresh();
+    x_cursor_pos++;
+  }
+
+  // TODO: Handle user input backspace key
+  if (user_input == 127) {
+  }
+
+  // TODO: Handle user input '\n' case
+  if (user_input == '\n') {
+  }
+
+  return user_input;
+}
+
 void exit_game(int exit_status, FILE *file_path) {
   endwin();
   close_file(file_path);
