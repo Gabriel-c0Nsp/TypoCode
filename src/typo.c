@@ -33,6 +33,11 @@ int x_cursor_pos = 0;
 int main(int argc, char *argv[]) {
   setlocale(LC_ALL, "pt_BR");
 
+  if (argc == 1) {
+    printf("You should specify a file!\n");
+    exit(1);
+  }
+
   FILE *file = open_file(argv[1]);
 
   Buffer buffer = create_buffer(file);
@@ -44,7 +49,7 @@ int main(int argc, char *argv[]) {
   draw_buffer(&buffer);
 
   while (true) {
-    wchar_t input = get_user_input(file, &buffer);
+    get_user_input(file, &buffer);
   }
 
   close_file(file);
@@ -67,16 +72,18 @@ void close_file(FILE *file) { fclose(file); }
 
 int file_char_number(FILE *file) {
   int char_number = 0;
-  wchar_t file_char;
+  wchar_t file_char = '0';
 
   while (file_char != EOF) {
     file_char = getc(file);
-    char_number++;
+
+    if (file_char != EOF)
+      char_number++;
   }
 
   rewind(file); // reseting file pointer
 
-  return char_number - 2; // HACK SOLUTION: Excludes the EOF file indicators
+  return char_number - 1; // ignores unwanted character at the end of the file
 }
 
 Buffer create_buffer(FILE *file) {
@@ -88,7 +95,7 @@ Buffer create_buffer(FILE *file) {
   Buffer buffer;
   buffer.current_cu_pointer = 0;
   buffer.size = char_number;
-  buffer.vect_buff = calloc(buffer.size, sizeof(wchar_t));
+  buffer.vect_buff = calloc(buffer.size + 1, sizeof(wchar_t));
 
   // alocating the file information inside the buffer vector
   for (int i = 0; i <= buffer.size; i++) {
@@ -124,7 +131,8 @@ void draw_buffer(Buffer *buffer) {
 wchar_t get_user_input(FILE *file, Buffer *buffer) {
   wchar_t user_input = getch();
 
-  if (user_input == 27) exit_game(0, file, buffer);
+  if (user_input == 27)
+    exit_game(0, file, buffer);
 
   if (user_input >= 32 && user_input <= 125) {
     mvaddch(y_cursor_pos, x_cursor_pos, user_input);
