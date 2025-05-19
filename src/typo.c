@@ -7,158 +7,104 @@
 #include <stdlib.h>
 #include <wchar.h>
 
-// Doubly linked list to store file buffer
-typedef struct BF_Node {
-  wchar_t file_char;
-  struct BF_Node *next;
-  struct BF_Node *prev;
-} BF_Node;
+typedef struct Buffer {
+  int current_cu_pointer;
+  int size;
+  wchar_t *vect_buff;
+} Buffer;
 
-
-BF_Node *create_node(wchar_t file_char);
-void insert_buffer(BF_Node **buffer, wchar_t file_char);
-void clean_buffer(BF_Node **buffer);
-
+// file related operations
 FILE *open_file(char *argv);
-void close_file(FILE *file_path);
+void close_file(FILE *file);
 
-void store_file_buffer(BF_Node **buffer, FILE *file);
+// buffer related operations
+int file_char_number(FILE *file);
+Buffer create_buffer(FILE *file);
+void draw_buffer(Buffer *buffer);
 
-void draw_buffer(BF_Node *buffer);
-
-wchar_t get_user_input(FILE *file, BF_Node *buffer);
-
-void exit_game(int exit_status, FILE *file_path, BF_Node **buffer);
-
-
+// cursor position global variables
 int y_cursor_pos = 0;
 int x_cursor_pos = 0;
 
 int main(int argc, char *argv[]) {
   setlocale(LC_ALL, "pt_BR");
 
-  // TODO: Try this one later
-  // setlocale(LC_ALL, "UTF-8");
+  FILE *file = open_file(argv[1]);
 
-  FILE *file_path = open_file(argv[1]);
+  Buffer buffer = create_buffer(file);
 
-  BF_Node *buffer = NULL;
-  store_file_buffer(&buffer, file_path);
-
-  initscr();
-  cbreak();
-  noecho();
-
-  draw_buffer(buffer);
-
-  while (true) {
-    wchar_t input = get_user_input(file_path, buffer);
-  }
+  close_file(file);
 
   return 0;
 }
 
-BF_Node *create_node(wchar_t file_char) {
-  BF_Node *new_node = (BF_Node *)malloc(sizeof(BF_Node));
-
-  if (new_node == NULL) {
-    printf("Something went wrong while reading the provided file!\nAborting...\n");
-    exit(1);
-  }
-
-  new_node->file_char = file_char;
-  new_node->next = NULL;
-  new_node->prev = NULL;
-
-  return new_node;
-}
-
-void insert_buffer(BF_Node **buffer, wchar_t file_char) {
-  BF_Node *new_node = create_node(file_char);  
-
-  if (*buffer == NULL) {
-    *buffer = new_node;
-    return;
-  }
-
-  BF_Node *temp = *buffer;
-
-  while (temp->next != NULL) {
-    temp = temp->next;
-  }
-
-  temp->next = new_node;
-  new_node->prev = temp;
-}
-
-void clean_buffer(BF_Node **buffer) {
-  BF_Node *temp = *buffer;
-
-  while (temp != NULL) {
-    BF_Node *next = temp->next;
-    free(temp);
-    temp = next;
-  }
-
-  *buffer = NULL;
-}
-
 FILE *open_file(char *argv) {
-  FILE *file_path;
+  FILE *file;
 
-  if ((file_path = fopen(argv, "r")) == NULL) {
-    printf("Não foi posspivel abrir o arquivo!\n");
+  if ((file = fopen(argv, "r")) == NULL) {
+    printf("couldn't open file\nAborting the program...\n");
     exit(1);
   }
 
-  return file_path;
+  return file;
 }
 
-void close_file(FILE *file_path) {
-  fclose(file_path);
-}
+void close_file(FILE *file) { fclose(file); }
 
-void store_file_buffer(BF_Node **buffer, FILE *file) {
+int file_char_number(FILE *file) {
+  int char_number = 0;
   wchar_t file_char;
 
-  do {
+  while (file_char != EOF) {
     file_char = getc(file);
+    char_number++;
+  }
 
-    insert_buffer(buffer, file_char);
-  } while (file_char != EOF);
+  rewind(file); // reseting file pointer
+
+  return char_number - 2; // HACK SOLUTION: Excludes the EOF file indicators
 }
 
-// TODO: Insert '\n' characters to the end of the lines
-void draw_buffer(BF_Node *buffer) {
+Buffer create_buffer(FILE *file) {
+  int char_number = file_char_number(file); // gets the number of
+                                            // characters inside a file
+  wchar_t file_char;
+
+  // initializing
+  Buffer buffer;
+  buffer.current_cu_pointer = 0;
+  buffer.size = char_number;
+  buffer.vect_buff = calloc(buffer.size, sizeof(wchar_t));
+
+  // alocating the file information inside the buffer vector
+  for (int i = 0; i <= buffer.size; i++) {
+    file_char = getc(file);
+    buffer.vect_buff[i] = file_char;
+  }
+
+  return buffer;
+}
+
+void draw_buffer(Buffer *buffer) {
   clear();
   move(0, 0);
 
-  int original_y_cu_pos = y_cursor_pos;
-  int original_x_cu_pos = x_cursor_pos;
+  int x_pos = 0;
+  int y_pos = 0;
 
-  y_cursor_pos = 0;
-  x_cursor_pos = 0;
+  for (int i = 0; i <= buffer->size; i++) {
+    mvaddch(y_pos, x_pos, buffer->vect_buff[i]);
 
-  BF_Node *temp = buffer;
+    // incrementing position
+    x_pos++;
 
-  while (temp->next != NULL) {
-    mvaddch(y_cursor_pos, x_cursor_pos, temp->file_char); 
-    x_cursor_pos++;
-
-    if (temp->file_char == '\n') {
-      y_cursor_pos++;   
-      x_cursor_pos = 0;
+    if (buffer->vect_buff[i] == '\n') {
+      y_pos++;
+      x_pos = 0;
     }
-    
-    temp = temp->next;
   }
 
-  refresh();
-
-  y_cursor_pos = original_y_cu_pos;
-  x_cursor_pos = original_x_cu_pos;
-
-  move(y_cursor_pos, x_cursor_pos);
+  move(y_cursor_pos, x_cursor_pos); // going back to the original position
 }
 
 wchar_t get_user_input(FILE *file, BF_Node *buffer) {
