@@ -13,8 +13,11 @@ typedef struct Buffer {
   wchar_t *vect_buff;
 } Buffer;
 
-// buffer related operations
+// file related operations
 FILE *open_file(char *argv);
+void close_file(FILE *file);
+
+// buffer related operations
 int file_char_number(FILE *file);
 Buffer create_buffer(FILE *file);
 void draw_buffer(Buffer *buffer);
@@ -30,7 +33,7 @@ int main(int argc, char *argv[]) {
 
   Buffer buffer = create_buffer(file);
 
-  fclose(file);
+  close_file(file);
 
   return 0;
 }
@@ -45,6 +48,8 @@ FILE *open_file(char *argv) {
 
   return file;
 }
+
+void close_file(FILE *file) { fclose(file); }
 
 int file_char_number(FILE *file) {
   int char_number = 0;
