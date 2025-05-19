@@ -50,34 +50,36 @@ int file_char_number(FILE *file) {
   int char_number = 0;
   wchar_t file_char;
 
-  do {
+  while (file_char != EOF) {
     file_char = getc(file);
     char_number++;
-  } while (file_char != EOF);
+  }
 
-  return char_number;
+  rewind(file); // reseting file pointer
+
+  return char_number - 2; // HACK SOLUTION: Excludes the EOF file indicators
 }
 
 Buffer create_buffer(FILE *file) {
-  int char_number = file_char_number(file);
+  int char_number = file_char_number(file); // gets the number of
+                                            // characters inside a file
   wchar_t file_char;
 
   // initializing
   Buffer buffer;
   buffer.current_cu_pointer = 0;
   buffer.size = char_number;
-  buffer.vect_buff = calloc(char_number, sizeof(wchar_t));
+  buffer.vect_buff = calloc(buffer.size, sizeof(wchar_t));
 
-  rewind(file); // reseting file pointer
-
-	// alocating the file information inside the buffer vector
-  for (int i = 0; i <= char_number; i++) {
+  // alocating the file information inside the buffer vector
+  for (int i = 0; i <= buffer.size; i++) {
     file_char = getc(file);
     buffer.vect_buff[i] = file_char;
   }
 
   return buffer;
 }
+
 void draw_buffer(Buffer *buffer) {
   clear();
   move(0, 0);
@@ -85,12 +87,7 @@ void draw_buffer(Buffer *buffer) {
   int x_pos = 0;
   int y_pos = 0;
 
-  Buffer *temp = buffer;
-
   for (int i = 0; i <= buffer->size; i++) {
-    if (buffer->vect_buff[i] == EOF)
-      continue; // Skip the end of the file indicator
-
     mvaddch(y_pos, x_pos, buffer->vect_buff[i]);
 
     // incrementing position
