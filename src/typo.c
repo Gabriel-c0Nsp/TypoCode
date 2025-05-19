@@ -22,6 +22,10 @@ int file_char_number(FILE *file);
 Buffer create_buffer(FILE *file);
 void draw_buffer(Buffer *buffer);
 
+wchar_t get_user_input(FILE *file, Buffer *buffer);
+
+void exit_game(int exit_status, FILE *file_path, Buffer *buffer);
+
 // cursor position global variables
 int y_cursor_pos = 0;
 int x_cursor_pos = 0;
@@ -32,6 +36,16 @@ int main(int argc, char *argv[]) {
   FILE *file = open_file(argv[1]);
 
   Buffer buffer = create_buffer(file);
+
+  initscr();
+  cbreak();
+  noecho();
+
+  draw_buffer(&buffer);
+
+  while (true) {
+    wchar_t input = get_user_input(file, &buffer);
+  }
 
   close_file(file);
 
@@ -107,10 +121,10 @@ void draw_buffer(Buffer *buffer) {
   move(y_cursor_pos, x_cursor_pos); // going back to the original position
 }
 
-wchar_t get_user_input(FILE *file, BF_Node *buffer) {
+wchar_t get_user_input(FILE *file, Buffer *buffer) {
   wchar_t user_input = getch();
 
-  if (user_input == 27) exit_game(0, file, &buffer);
+  if (user_input == 27) exit_game(0, file, buffer);
 
   if (user_input >= 32 && user_input <= 125) {
     mvaddch(y_cursor_pos, x_cursor_pos, user_input);
@@ -125,10 +139,10 @@ wchar_t get_user_input(FILE *file, BF_Node *buffer) {
   return user_input;
 }
 
-void exit_game(int exit_status, FILE *file_path, BF_Node **buffer) {
+void exit_game(int exit_status, FILE *file_path, Buffer *buffer) {
   endwin();
   close_file(file_path);
-  clean_buffer(buffer);
+  free(buffer->vect_buff);
 
   exit(exit_status);
 }
