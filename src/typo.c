@@ -13,11 +13,8 @@ typedef struct Buffer {
   wchar_t *vect_buff;
 } Buffer;
 
-// file related operations
-FILE *open_file(char *argv);
-void close_file(FILE *file);
-
 // buffer related operations
+FILE *open_file(char *argv);
 int file_char_number(FILE *file);
 Buffer create_buffer(FILE *file);
 void draw_buffer(Buffer *buffer);
@@ -33,7 +30,7 @@ int main(int argc, char *argv[]) {
 
   Buffer buffer = create_buffer(file);
 
-  close_file(file);
+  fclose(file);
 
   return 0;
 }
@@ -48,8 +45,6 @@ FILE *open_file(char *argv) {
 
   return file;
 }
-
-void close_file(FILE *file) { fclose(file); }
 
 int file_char_number(FILE *file) {
   int char_number = 0;
@@ -75,19 +70,16 @@ Buffer create_buffer(FILE *file) {
 
   rewind(file); // reseting file pointer
 
+	// alocating the file information inside the buffer vector
   for (int i = 0; i <= char_number; i++) {
     file_char = getc(file);
     buffer.vect_buff[i] = file_char;
   }
 
-  for (int i = 0; i <= char_number; i++) {
-    printf("%c", buffer.vect_buff[i]);
-  }
-
   return buffer;
 }
 void draw_buffer(Buffer *buffer) {
-  clear(); // TODO: extract this one to a funciton like start_game()
+  clear();
   move(0, 0);
 
   int x_pos = 0;
@@ -103,6 +95,7 @@ void draw_buffer(Buffer *buffer) {
 
     // incrementing position
     x_pos++;
+
     if (buffer->vect_buff[i] == '\n') {
       y_pos++;
       x_pos = 0;
