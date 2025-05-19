@@ -19,7 +19,7 @@ void close_file(FILE *file);
 
 // buffer related operations
 int file_char_number(FILE *file);
-Buffer *create_buffer(FILE *file);
+Buffer create_buffer(FILE *file);
 void draw_buffer(Buffer *buffer);
 
 // cursor position global variables
@@ -31,19 +31,7 @@ int main(int argc, char *argv[]) {
 
   FILE *file = open_file(argv[1]);
 
-  Buffer *buffer = create_buffer(file);
-
-	// debuging purposes
-	/* printf("%d", buffer->current_cu_pointer); */
-	/* printf("%d", buffer->size); */
-	/* printf("%c", buffer->vect_buff[8]); */
-
-  /* initscr(); */
-  /* cbreak(); */
-  /* noecho(); */
-  /**/
-  /* draw_buffer(buffer); */
-  /* getch(); */
+  Buffer buffer = create_buffer(file);
 
   close_file(file);
 
@@ -72,40 +60,33 @@ int file_char_number(FILE *file) {
     char_number++;
   } while (file_char != EOF);
 
-  char_number -= 2; // necessary because of the basic stream pointers to the
-                    // beginning/end of the file
-
   return char_number;
 }
 
-// FIXME: broke after becoming a pointer
-Buffer *create_buffer(FILE *file) {
+Buffer create_buffer(FILE *file) {
   int char_number = file_char_number(file);
   wchar_t file_char;
 
   // initializing
-  Buffer *buffer;
-  buffer->current_cu_pointer = 0;
-  buffer->size = char_number;
-  buffer->vect_buff = calloc(char_number, sizeof(wchar_t));
+  Buffer buffer;
+  buffer.current_cu_pointer = 0;
+  buffer.size = char_number;
+  buffer.vect_buff = calloc(char_number, sizeof(wchar_t));
 
   rewind(file); // reseting file pointer
 
   for (int i = 0; i <= char_number; i++) {
     file_char = getc(file);
-		printf("%c", file_char);
-    buffer->vect_buff[i] = file_char;
+    buffer.vect_buff[i] = file_char;
   }
 
-	// debuging purposes
-  /* for (int i = 0; i <= char_number; i++) { */
-  /* printf("%c", buffer->vect_buff[i]); */
-  /* } */
+  for (int i = 0; i <= char_number; i++) {
+    printf("%c", buffer.vect_buff[i]);
+  }
 
   return buffer;
 }
 void draw_buffer(Buffer *buffer) {
-  // TODO: Implement
   clear(); // TODO: extract this one to a funciton like start_game()
   move(0, 0);
 
@@ -114,16 +95,19 @@ void draw_buffer(Buffer *buffer) {
 
   Buffer *temp = buffer;
 
-  /* for (int i = 0; i <= buffer->size; i++) { */
-  /*   mvaddch(y_pos, x_pos, buffer->vect_buff[i]); */
-  /**/
-  /*   // incrementing position */
-  /*   x_pos++; */
-  /*   if (buffer->vect_buff[i] == '\n') { */
-  /*     y_pos++; */
-  /*     x_pos = 0; */
-  /*   } */
-  /* } */
+  for (int i = 0; i <= buffer->size; i++) {
+    if (buffer->vect_buff[i] == EOF)
+      continue; // Skip the end of the file indicator
+
+    mvaddch(y_pos, x_pos, buffer->vect_buff[i]);
+
+    // incrementing position
+    x_pos++;
+    if (buffer->vect_buff[i] == '\n') {
+      y_pos++;
+      x_pos = 0;
+    }
+  }
 
   move(y_cursor_pos, x_cursor_pos); // going back to the original position
 }
