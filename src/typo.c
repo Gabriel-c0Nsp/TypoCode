@@ -13,6 +13,8 @@ typedef struct Buffer {
   wchar_t *vect_buff;
 } Buffer;
 
+void define_locale(char *locale);
+
 // file related operations
 FILE *open_file(char *argv);
 void close_file(FILE *file);
@@ -31,14 +33,14 @@ int y_cursor_pos = 0;
 int x_cursor_pos = 0;
 
 int main(int argc, char *argv[]) {
-  setlocale(LC_ALL, "pt_BR");
-
   if (argc == 1) {
     printf("You should specify a file!\n");
     exit(1);
   }
 
   FILE *file = open_file(argv[1]);
+
+  define_locale(argv[2]);
 
   Buffer buffer = create_buffer(file);
 
@@ -55,6 +57,16 @@ int main(int argc, char *argv[]) {
   close_file(file);
 
   return 0;
+}
+
+void define_locale(char *locale) {
+  if (locale != NULL) {
+    setlocale(LC_ALL, locale);
+
+    return;
+  }
+
+  setlocale(LC_ALL, "UTF-8");
 }
 
 FILE *open_file(char *argv) {
@@ -107,7 +119,7 @@ Buffer create_buffer(FILE *file) {
 }
 
 void draw_buffer(Buffer *buffer) {
-  clear();
+  // clear(); // NOTE: comented for debug purposes
   move(0, 0);
 
   int x_pos = 0;
@@ -134,6 +146,7 @@ wchar_t get_user_input(FILE *file, Buffer *buffer) {
   if (user_input == 27)
     exit_game(0, file, buffer);
 
+  // NOTE: This don't include accentes
   if (user_input >= 32 && user_input <= 125) {
     mvaddch(y_cursor_pos, x_cursor_pos, user_input);
     refresh();
