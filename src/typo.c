@@ -32,24 +32,29 @@ int y_cursor_pos = 0;
 int x_cursor_pos = 0;
 
 int main(int argc, char *argv[]) {
-  if (argc == 1) {
+  if (argc < 2) {
     printf("You should specify a file!\n");
     exit(1);
   }
 
   FILE *file = open_file(argv[1]);
 
-  define_locale(argv[2]);
-
-  Buffer buffer = create_buffer(file);
+  if (argc >= 3)
+    define_locale(argv[2]);
+  else
+    define_locale(NULL);
 
   initscr();
   cbreak();
   noecho();
 
+  setlocale(LC_ALL, ""); // important so the widechar ncurses can work
+
+  Buffer buffer = create_buffer(file);
+
   draw_buffer(&buffer);
 
-  while (true) {
+  while (1) {
     get_user_input(file, &buffer);
   }
 
@@ -59,13 +64,14 @@ int main(int argc, char *argv[]) {
 }
 
 void define_locale(char *locale) {
-  if (locale != NULL) {
-    setlocale(LC_ALL, locale);
-
+  if (locale) {
+    if (setlocale(LC_ALL, locale) == NULL) {
+      // using the default locale if locale passed is not valid
+      setlocale(LC_ALL, "");
+    }
     return;
   }
-
-  setlocale(LC_ALL, "UTF-8");
+  setlocale(LC_ALL, "");
 }
 
 FILE *open_file(char *argv) {
@@ -83,86 +89,93 @@ void close_file(FILE *file) { fclose(file); }
 
 int file_char_number(FILE *file) {
   int char_number = 0;
-  wchar_t file_char = '0';
+  wint_t file_char;
 
-  while (file_char != EOF) {
-    file_char = getc(file);
-
-    if (file_char != EOF)
-      char_number++;
+  while ((file_char = fgetwc(file)) != WEOF) {
+    char_number++;
   }
 
-  rewind(file); // reseting file pointer
-
-  return char_number - 1; // ignores unwanted character at the end of the file
+  rewind(file);
+  return char_number;
 }
 
 Buffer create_buffer(FILE *file) {
-  int char_number = file_char_number(file); // gets the number of
-                                            // characters inside a file
-  wchar_t file_char;
+  int char_number = file_char_number(file);
 
-  // initializing
   Buffer buffer;
   buffer.current_cu_pointer = 0;
   buffer.size = char_number;
   buffer.vect_buff = calloc(buffer.size + 1, sizeof(wchar_t));
 
-  // alocating the file information inside the buffer vector
-  for (int i = 0; i <= buffer.size; i++) {
-    file_char = getc(file);
-    buffer.vect_buff[i] = file_char;
+  for (int i = 0; i < buffer.size; i++) {
+    wint_t file_char = fgetwc(file);
+    if (file_char == WEOF) {
+      buffer.vect_buff[i] = L'\0';
+    } else {
+      buffer.vect_buff[i] = (wchar_t)file_char;
+    }
   }
+  buffer.vect_buff[buffer.size] = L'\0';
 
   return buffer;
 }
 
 void draw_buffer(Buffer *buffer) {
-  // clear(); // NOTE: comented for debug purposes
+  clear();
   move(0, 0);
 
   int x_pos = 0;
   int y_pos = 0;
 
-  for (int i = 0; i <= buffer->size; i++) {
-    mvaddch(y_pos, x_pos, buffer->vect_buff[i]);
+  for (int i = 0; i < buffer->size; i++) {
+    wchar_t file_char = buffer->vect_buff[i];
 
-    // incrementing position
+    cchar_t ch;
+    setcchar(&ch, &file_char, 0, 0, NULL);
+
+    mvadd_wch(y_pos, x_pos, &ch);
+
     x_pos++;
 
-    if (buffer->vect_buff[i] == '\n') {
+    if (file_char == L'\n') {
       y_pos++;
       x_pos = 0;
     }
   }
 
-  move(y_cursor_pos, x_cursor_pos); // going back to the original position
+  move(y_cursor_pos, x_cursor_pos);
+  refresh();
 }
 
 wchar_t get_user_input(FILE *file, Buffer *buffer) {
-  wchar_t user_input = getch();
+  wint_t user_input;
+  int result = get_wch(&user_input);
 
-  if (user_input == 27)
-    exit_game(0, file, buffer);
-
-  // NOTE: This don't include accentes
-  if (user_input >= 32 && user_input <= 125) {
-    mvaddch(y_cursor_pos, x_cursor_pos, user_input);
-    refresh();
-    x_cursor_pos++;
-  } else if (user_input == 127) {
-    // TODO: Handle user input backspace key
-  } else if (user_input == '\n') {
-    // TODO: Handle user input '\n' case
+  if (result == ERR) {
+    fprintf(stderr, "Some error occurred while typing\n");
+    exit_game(1, file, buffer);
   }
 
-  return user_input;
+  if (user_input == 27) { // ESC
+    exit_game(0, file, buffer);
+  }
+
+  wchar_t result_char = (wchar_t)user_input;
+  cchar_t display_char;
+  setcchar(&display_char, &result_char, 0, 0, NULL);
+
+  mvadd_wch(y_cursor_pos, x_cursor_pos, &display_char);
+  refresh();
+
+  // handle_input(); TODO: Implement
+  x_cursor_pos++; // only for now
+
+  return result_char;
 }
 
 void exit_game(int exit_status, FILE *file_path, Buffer *buffer) {
   endwin();
   close_file(file_path);
   free(buffer->vect_buff);
-
   exit(exit_status);
 }

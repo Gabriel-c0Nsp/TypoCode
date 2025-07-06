@@ -9,7 +9,7 @@ make: src/typo.c
 
 file1: src/typo.c
 	@$(CC) src/typo.c $(CFLAGS) src/typo
-	@src/typo src/ArquivoTeste.java pt_BR
+	@src/typo src/ArquivoTeste.java pt_BR.UTF-8
 
 file2: src/typo.c
 	@$(CC) src/typo.c $(CFLAGS) src/typo
