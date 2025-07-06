@@ -12,8 +12,6 @@ typedef struct Buffer {
   wchar_t *vect_buff;
 } Buffer;
 
-void define_locale(char *locale);
-
 // file related operations
 FILE *open_file(char *argv);
 void close_file(FILE *file);
@@ -32,6 +30,8 @@ int y_cursor_pos = 0;
 int x_cursor_pos = 0;
 
 int main(int argc, char *argv[]) {
+  setlocale(LC_ALL, ""); // important so the widechar ncurses can work
+
   if (argc < 2) {
     printf("You should specify a file!\n");
     exit(1);
@@ -39,16 +39,9 @@ int main(int argc, char *argv[]) {
 
   FILE *file = open_file(argv[1]);
 
-  if (argc >= 3)
-    define_locale(argv[2]);
-  else
-    define_locale(NULL);
-
   initscr();
   cbreak();
   noecho();
-
-  setlocale(LC_ALL, ""); // important so the widechar ncurses can work
 
   Buffer buffer = create_buffer(file);
 
@@ -61,17 +54,6 @@ int main(int argc, char *argv[]) {
   close_file(file);
 
   return 0;
-}
-
-void define_locale(char *locale) {
-  if (locale) {
-    if (setlocale(LC_ALL, locale) == NULL) {
-      // using the default locale if locale passed is not valid
-      setlocale(LC_ALL, "");
-    }
-    return;
-  }
-  setlocale(LC_ALL, "");
 }
 
 FILE *open_file(char *argv) {
@@ -156,6 +138,7 @@ wchar_t get_user_input(FILE *file, Buffer *buffer) {
     exit_game(1, file, buffer);
   }
 
+  // NOTE: This is part of the handle_input() function
   if (user_input == 27) { // ESC
     exit_game(0, file, buffer);
   }
