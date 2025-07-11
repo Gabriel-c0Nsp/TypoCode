@@ -2,8 +2,10 @@
 
 #include <locale.h>
 #include <ncurses.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <wchar.h>
 
 typedef struct Buffer {
@@ -11,6 +13,9 @@ typedef struct Buffer {
   int size;
   wchar_t *vect_buff;
 } Buffer;
+
+// log/debug functions
+void logtf(const char *fmt, ...);
 
 // file related operations
 FILE *open_file(char *argv);
@@ -48,12 +53,32 @@ int main(int argc, char *argv[]) {
   draw_buffer(&buffer);
 
   while (1) {
-    get_user_input(file, &buffer);
+    wchar_t user_input = get_user_input(file, &buffer);
+    logtf("user_input: %lc\n", user_input);
   }
 
   close_file(file);
 
   return 0;
+}
+
+void logtf(const char *fmt, ...) {
+  FILE *log_file = fopen("log.txt", "a");
+  if (!log_file) {
+    printf(
+        "Failed to open log file: log.txt\nAborting for security reasons...\n");
+    exit(1);
+  }
+
+  time_t now = time(NULL);
+  struct tm *t = localtime(&now);
+  fprintf(log_file, "[%02d:%02d:%02d] ", t->tm_hour, t->tm_min, t->tm_sec);
+
+  va_list args;
+  va_start(args, fmt);
+  vfprintf(log_file, fmt, args);
+  va_end(args);
+  fclose(log_file);
 }
 
 FILE *open_file(char *argv) {
