@@ -176,14 +176,14 @@ void handle_input(wchar_t user_input, FILE *file, Buffer *buffer) {
     exit_game(0, file, buffer);
   }
 
-  // TODO: Implement handle for this case
-  if (user_input == 127) {
-    logtf("O usuário está apertando backspace!\n");
-  }
-
-  if (user_input == buffer_cu_char &&
-      buffer->offset == 0) {
+  if (user_input == buffer_cu_char && buffer->offset == 0) {
     buffer->current_cu_pointer++;
+  } else if (user_input == 127) {
+    x_cursor_pos--;
+    buffer->offset--;
+    if (buffer->offset < 0)
+      buffer->offset = 0;
+    logtf("user pressing backspace\n");
   } else {
     buffer->offset++;
   }
@@ -193,21 +193,36 @@ void handle_input(wchar_t user_input, FILE *file, Buffer *buffer) {
   logtf("buffer_char: %lc\n", buffer_cu_char);
 
   // TODO: Implement a display function
-  if ((user_input == L'\n' &&
-          buffer_cu_char != L'\n') ||
-      (user_input == ' ' &&
-          buffer_cu_char != L' ')) {
+  if ((user_input == L'\n' && buffer_cu_char != L'\n') ||
+      (user_input == ' ' && buffer_cu_char != L' ')) {
     cchar_t display_char;
     wchar_t space_char = '_';
     setcchar(&display_char, &space_char, 0, 0, NULL);
-    mvadd_wch(y_cursor_pos, x_cursor_pos, &display_char);
+    if (user_input != 127)
+      mvadd_wch(y_cursor_pos, x_cursor_pos, &display_char);
+    refresh();
     x_cursor_pos++;
   } else {
     cchar_t display_char;
     setcchar(&display_char, &user_input, 0, 0, NULL);
-    mvadd_wch(y_cursor_pos, x_cursor_pos, &display_char);
+    if (user_input != 127)
+      mvadd_wch(y_cursor_pos, x_cursor_pos, &display_char);
     refresh();
     x_cursor_pos++;
+  }
+
+  if (user_input == 27) { // ESC
+    exit_game(0, file, buffer);
+  } else if (user_input == 127) {
+    // TODO: Implement
+  } else if (user_input == L'\n') {
+    // TODO: Implement
+  } else if (user_input == ' ') {
+    // TODO: Implement
+  } else if (user_input == buffer_cu_char) {
+    // TODO: Implement
+  } else if (user_input != buffer_cu_char) {
+    // TODO: Implement
   }
 }
 
