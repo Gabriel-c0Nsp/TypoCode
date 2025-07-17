@@ -26,7 +26,9 @@ int file_char_number(FILE *file);
 Buffer create_buffer(FILE *file);
 void draw_buffer(Buffer *buffer);
 
+// user input related operations
 wchar_t get_user_input(FILE *file, Buffer *buffer);
+void handle_input(wchar_t user_input, FILE *file, Buffer *buffer);
 
 void exit_game(int exit_status, FILE *file_path, Buffer *buffer);
 
@@ -53,8 +55,7 @@ int main(int argc, char *argv[]) {
   draw_buffer(&buffer);
 
   while (1) {
-    wchar_t user_input = get_user_input(file, &buffer);
-    logtf("user_input: %lc\n", user_input);
+    handle_input(get_user_input(file, &buffer), file, &buffer);
   }
 
   close_file(file);
@@ -163,22 +164,23 @@ wchar_t get_user_input(FILE *file, Buffer *buffer) {
     exit_game(1, file, buffer);
   }
 
-  // NOTE: This is part of the handle_input() function
+  wchar_t result_char = (wchar_t)user_input;
+  return result_char;
+}
+
+void handle_input(wchar_t user_input, FILE *file, Buffer *buffer) {
   if (user_input == 27) { // ESC
     exit_game(0, file, buffer);
   }
 
-  wchar_t result_char = (wchar_t)user_input;
+  // TODO: Implement a display function
   cchar_t display_char;
-  setcchar(&display_char, &result_char, 0, 0, NULL);
+  setcchar(&display_char, &user_input, 0, 0, NULL);
 
   mvadd_wch(y_cursor_pos, x_cursor_pos, &display_char);
   refresh();
 
-  // handle_input(); TODO: Implement
   x_cursor_pos++; // only for now
-
-  return result_char;
 }
 
 void exit_game(int exit_status, FILE *file_path, Buffer *buffer) {
