@@ -10,6 +10,7 @@
 
 typedef struct Buffer {
   int current_cu_pointer;
+  int offset;
   int size;
   wchar_t *vect_buff;
 } Buffer;
