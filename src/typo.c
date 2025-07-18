@@ -32,6 +32,7 @@ void display_char(int y, int x, wchar_t character);
 wchar_t get_user_input(FILE *file, Buffer *buffer);
 void handle_del_key(FILE *file, Buffer *buffer);
 void handle_bs_key(Buffer *buffer);
+void handle_wrong_key(wchar_t user_input, Buffer *buffer);
 void handle_input(wchar_t user_input, FILE *file, Buffer *buffer);
 
 void exit_game(int exit_status, FILE *file_path, Buffer *buffer);
@@ -213,6 +214,13 @@ void handle_bs_key(Buffer *buffer) {
   }
 }
 
+void handle_wrong_key(wchar_t user_input, Buffer *buffer) {
+  buffer->offset++;
+  display_char(y_cursor_pos, x_cursor_pos, user_input);
+  x_cursor_pos++;
+  move(y_cursor_pos, x_cursor_pos);
+  // TODO: make the character red
+}
 
   if (user_input == 27) { // ESC
     handle_del_key(file, buffer);
@@ -222,7 +230,7 @@ void handle_bs_key(Buffer *buffer) {
   } else if (user_input == ' ') {
     // TODO: Implement
   } else if (user_input != buffer_cu_char) {
-    // TODO: Implement
+    handle_wrong_key(user_input, buffer);
   } else if (user_input == buffer_cu_char) {
     // TODO: Implement
   }
