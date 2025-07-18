@@ -26,10 +26,10 @@ void close_file(FILE *file);
 int file_char_number(FILE *file);
 Buffer create_buffer(FILE *file);
 void draw_buffer(Buffer *buffer);
+void display_char(int y, int x, wchar_t character);
 
 // user input related operations
 wchar_t get_user_input(FILE *file, Buffer *buffer);
-void display_char(wchar_t character);
 void handle_input(wchar_t user_input, FILE *file, Buffer *buffer);
 
 void exit_game(int exit_status, FILE *file_path, Buffer *buffer);
@@ -157,6 +157,14 @@ void draw_buffer(Buffer *buffer) {
   refresh();
 }
 
+void display_char(int y, int x, wchar_t character) {
+  cchar_t display_char;
+  setcchar(&display_char, &character, 0, 0, NULL);
+  mvadd_wch(y, x, &display_char);
+  move(y, x);
+  refresh();
+}
+
 wchar_t get_user_input(FILE *file, Buffer *buffer) {
   wint_t user_input;
   int result = get_wch(&user_input);
@@ -170,12 +178,6 @@ wchar_t get_user_input(FILE *file, Buffer *buffer) {
   return result_char;
 }
 
-void display_char(wchar_t character) {
-  cchar_t display_char;
-  setcchar(&display_char, &character, 0, 0, NULL);
-  mvadd_wch(y_cursor_pos, x_cursor_pos, &display_char);
-  refresh();
-}
 
 void handle_input(wchar_t user_input, FILE *file, Buffer *buffer) {
   wchar_t buffer_cu_char = buffer->vect_buff[buffer->current_cu_pointer];
