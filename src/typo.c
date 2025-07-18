@@ -32,6 +32,7 @@ void display_char(int y, int x, wchar_t character);
 wchar_t get_user_input(FILE *file, Buffer *buffer);
 void handle_del_key(FILE *file, Buffer *buffer);
 void handle_bs_key(Buffer *buffer);
+void handle_enter_key(Buffer *buffer);
 void handle_space_key(wchar_t user_input, Buffer *buffer);
 void handle_wrong_key(wchar_t user_input, Buffer *buffer);
 void handle_right_key(Buffer *buffer);
@@ -212,6 +213,29 @@ void handle_bs_key(Buffer *buffer) {
   }
 }
 
+void handle_enter_key(Buffer *buffer) {
+  wchar_t buffer_cu_char = buffer->vect_buff[buffer->current_cu_pointer];
+
+  if (buffer_cu_char == L'\n') {
+    y_cursor_pos++;
+    x_cursor_pos = 0;
+
+    do {
+      buffer->current_cu_pointer++;
+      buffer_cu_char = buffer->vect_buff[buffer->current_cu_pointer];
+      if (buffer_cu_char == L' ')
+        x_cursor_pos++;
+    } while (buffer_cu_char == L' ');
+
+    move(y_cursor_pos, x_cursor_pos);
+  } else {
+    display_char(y_cursor_pos, x_cursor_pos, '_');
+    buffer->offset++;
+    x_cursor_pos++;
+    move(y_cursor_pos, x_cursor_pos);
+  }
+}
+
 void handle_space_key(wchar_t user_input, Buffer *buffer) {
   wchar_t buffer_cu_char = buffer->vect_buff[buffer->current_cu_pointer];
 
@@ -250,10 +274,10 @@ void handle_input(wchar_t user_input, FILE *file, Buffer *buffer) {
   } else if (user_input == 127) { // BACKSPACE
     handle_bs_key(buffer);
   } else if (user_input == '\n') {
-    // TODO: Implement
+    handle_enter_key(buffer);
   } else if (user_input == ' ') {
     handle_space_key(user_input, buffer);
-  } else if (user_input != buffer_cu_char) {
+  } else if (user_input != buffer_cu_char && buffer_cu_char != L'\n') {
     handle_wrong_key(user_input, buffer);
   } else if (user_input == buffer_cu_char) {
     handle_right_key(buffer);
