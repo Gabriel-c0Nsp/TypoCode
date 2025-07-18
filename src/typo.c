@@ -33,6 +33,7 @@ wchar_t get_user_input(FILE *file, Buffer *buffer);
 void handle_del_key(FILE *file, Buffer *buffer);
 void handle_bs_key(Buffer *buffer);
 void handle_wrong_key(wchar_t user_input, Buffer *buffer);
+void handle_right_key(Buffer *buffer);
 void handle_input(wchar_t user_input, FILE *file, Buffer *buffer);
 
 void exit_game(int exit_status, FILE *file_path, Buffer *buffer);
@@ -222,6 +223,13 @@ void handle_wrong_key(wchar_t user_input, Buffer *buffer) {
   // TODO: make the character red
 }
 
+void handle_right_key(Buffer *buffer) {
+  buffer->current_cu_pointer++;
+  x_cursor_pos++;
+  move(y_cursor_pos, x_cursor_pos);
+  // TODO: make the character green
+}
+
   if (user_input == 27) { // ESC
     handle_del_key(file, buffer);
   } else if (user_input == 127) { // BACKSPACE
@@ -232,7 +240,7 @@ void handle_wrong_key(wchar_t user_input, Buffer *buffer) {
   } else if (user_input != buffer_cu_char) {
     handle_wrong_key(user_input, buffer);
   } else if (user_input == buffer_cu_char) {
-    // TODO: Implement
+    handle_right_key(buffer);
   }
 }
 
