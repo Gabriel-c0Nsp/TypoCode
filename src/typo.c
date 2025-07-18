@@ -31,6 +31,7 @@ void display_char(int y, int x, wchar_t character);
 // user input related operations
 wchar_t get_user_input(FILE *file, Buffer *buffer);
 void handle_del_key(FILE *file, Buffer *buffer);
+void handle_bs_key(Buffer *buffer);
 void handle_input(wchar_t user_input, FILE *file, Buffer *buffer);
 
 void exit_game(int exit_status, FILE *file_path, Buffer *buffer);
@@ -183,26 +184,40 @@ void handle_del_key(FILE *file, Buffer *buffer) { exit_game(0, file, buffer); }
 
 void handle_input(wchar_t user_input, FILE *file, Buffer *buffer) {
   wchar_t buffer_cu_char = buffer->vect_buff[buffer->current_cu_pointer];
+void handle_bs_key(Buffer *buffer) {
+  if (buffer->current_cu_pointer || buffer->offset) {
+    if (buffer->offset > 0) {
+      buffer->offset--;
+      x_cursor_pos--;
 
+      if (x_cursor_pos < 0)
+        x_cursor_pos = 0;
 
-  if (user_input == buffer_cu_char && buffer->offset == 0) {
-    buffer->current_cu_pointer++;
-  } else if (user_input == 127) {
-    x_cursor_pos--;
-    buffer->offset--;
-    if (buffer->offset < 0)
-      buffer->offset = 0;
-    logtf("user pressing backspace\n");
-  } else {
-    buffer->offset++;
+      display_char(
+          y_cursor_pos, x_cursor_pos,
+          buffer->vect_buff[buffer->current_cu_pointer + buffer->offset]);
+
+    } else if (!buffer->offset && buffer->current_cu_pointer) {
+      buffer->current_cu_pointer--;
+
+      x_cursor_pos--;
+      if (x_cursor_pos < 0) {
+        x_cursor_pos = 0;
+        y_cursor_pos--;
+      }
+
+      display_char(
+          y_cursor_pos, x_cursor_pos,
+          buffer->vect_buff[buffer->current_cu_pointer + buffer->offset]);
+    }
   }
+}
 
-  logtf("%d\n", buffer->offset);
-  logtf("user_input: %lc\n", user_input);
-  logtf("buffer_char: %lc\n", buffer_cu_char);
 
   if (user_input == 27) { // ESC
     handle_del_key(file, buffer);
+  } else if (user_input == 127) { // BACKSPACE
+    handle_bs_key(buffer);
     // TODO: Implement
   } else if (user_input == ' ') {
     // TODO: Implement
