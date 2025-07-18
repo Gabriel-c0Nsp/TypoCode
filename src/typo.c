@@ -29,6 +29,7 @@ void draw_buffer(Buffer *buffer);
 
 // user input related operations
 wchar_t get_user_input(FILE *file, Buffer *buffer);
+void display_char(wchar_t character);
 void handle_input(wchar_t user_input, FILE *file, Buffer *buffer);
 
 void exit_game(int exit_status, FILE *file_path, Buffer *buffer);
@@ -169,6 +170,13 @@ wchar_t get_user_input(FILE *file, Buffer *buffer) {
   return result_char;
 }
 
+void display_char(wchar_t character) {
+  cchar_t display_char;
+  setcchar(&display_char, &character, 0, 0, NULL);
+  mvadd_wch(y_cursor_pos, x_cursor_pos, &display_char);
+  refresh();
+}
+
 void handle_input(wchar_t user_input, FILE *file, Buffer *buffer) {
   wchar_t buffer_cu_char = buffer->vect_buff[buffer->current_cu_pointer];
 
@@ -192,25 +200,6 @@ void handle_input(wchar_t user_input, FILE *file, Buffer *buffer) {
   logtf("user_input: %lc\n", user_input);
   logtf("buffer_char: %lc\n", buffer_cu_char);
 
-  // TODO: Implement a display function
-  if ((user_input == L'\n' && buffer_cu_char != L'\n') ||
-      (user_input == ' ' && buffer_cu_char != L' ')) {
-    cchar_t display_char;
-    wchar_t space_char = '_';
-    setcchar(&display_char, &space_char, 0, 0, NULL);
-    if (user_input != 127)
-      mvadd_wch(y_cursor_pos, x_cursor_pos, &display_char);
-    refresh();
-    x_cursor_pos++;
-  } else {
-    cchar_t display_char;
-    setcchar(&display_char, &user_input, 0, 0, NULL);
-    if (user_input != 127)
-      mvadd_wch(y_cursor_pos, x_cursor_pos, &display_char);
-    refresh();
-    x_cursor_pos++;
-  }
-
   if (user_input == 27) { // ESC
     exit_game(0, file, buffer);
   } else if (user_input == 127) {
@@ -219,9 +208,9 @@ void handle_input(wchar_t user_input, FILE *file, Buffer *buffer) {
     // TODO: Implement
   } else if (user_input == ' ') {
     // TODO: Implement
-  } else if (user_input == buffer_cu_char) {
-    // TODO: Implement
   } else if (user_input != buffer_cu_char) {
+    // TODO: Implement
+  } else if (user_input == buffer_cu_char) {
     // TODO: Implement
   }
 }
