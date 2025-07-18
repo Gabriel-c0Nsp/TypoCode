@@ -184,14 +184,12 @@ wchar_t get_user_input(FILE *file, Buffer *buffer) {
 
 void handle_del_key(FILE *file, Buffer *buffer) { exit_game(0, file, buffer); }
 
-void handle_input(wchar_t user_input, FILE *file, Buffer *buffer) {
-  wchar_t buffer_cu_char = buffer->vect_buff[buffer->current_cu_pointer];
 void handle_bs_key(Buffer *buffer) {
   if (buffer->current_cu_pointer || buffer->offset) {
     if (buffer->offset > 0) {
       buffer->offset--;
-      x_cursor_pos--;
 
+      x_cursor_pos--;
       if (x_cursor_pos < 0)
         x_cursor_pos = 0;
 
@@ -203,10 +201,8 @@ void handle_bs_key(Buffer *buffer) {
       buffer->current_cu_pointer--;
 
       x_cursor_pos--;
-      if (x_cursor_pos < 0) {
+      if (x_cursor_pos < 0)
         x_cursor_pos = 0;
-        y_cursor_pos--;
-      }
 
       display_char(
           y_cursor_pos, x_cursor_pos,
@@ -230,10 +226,14 @@ void handle_right_key(Buffer *buffer) {
   // TODO: make the character green
 }
 
+void handle_input(wchar_t user_input, FILE *file, Buffer *buffer) {
+  wchar_t buffer_cu_char = buffer->vect_buff[buffer->current_cu_pointer];
+
   if (user_input == 27) { // ESC
     handle_del_key(file, buffer);
   } else if (user_input == 127) { // BACKSPACE
     handle_bs_key(buffer);
+  } else if (user_input == '\n') {
     // TODO: Implement
   } else if (user_input == ' ') {
     // TODO: Implement
@@ -242,6 +242,10 @@ void handle_right_key(Buffer *buffer) {
   } else if (user_input == buffer_cu_char) {
     handle_right_key(buffer);
   }
+
+  logtf("%d\n", buffer->offset);
+  logtf("user_input: %lc\n", user_input);
+  logtf("buffer_char: %lc\n", buffer_cu_char);
 }
 
 void exit_game(int exit_status, FILE *file_path, Buffer *buffer) {
