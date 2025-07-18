@@ -26,7 +26,7 @@ void close_file(FILE *file);
 int file_char_number(FILE *file);
 Buffer create_buffer(FILE *file);
 void draw_buffer(Buffer *buffer);
-void display_char(int y, int x, wchar_t character);
+void display_char(int y, int x, wchar_t character, attr_t attr);
 
 // user input related operations
 wchar_t get_user_input(FILE *file, Buffer *buffer);
@@ -35,7 +35,7 @@ void handle_bs_key(Buffer *buffer);
 void handle_enter_key(Buffer *buffer);
 void handle_space_key(wchar_t user_input, Buffer *buffer);
 void handle_wrong_key(wchar_t user_input, Buffer *buffer);
-void handle_right_key(Buffer *buffer);
+void handle_right_key(wchar_t user_input, Buffer *buffer);
 void handle_input(wchar_t user_input, FILE *file, Buffer *buffer);
 
 void exit_game(int exit_status, FILE *file_path, Buffer *buffer);
@@ -55,6 +55,18 @@ int main(int argc, char *argv[]) {
   FILE *file = open_file(argv[1]);
 
   initscr();
+
+  if (!has_colors()) {
+    endwin();
+    fprintf(stderr,
+            "Your terminal emulator must support colors to play this game!\n");
+    exit(1);
+  }
+
+  start_color();
+  init_pair(1, COLOR_GREEN, COLOR_BLACK);
+  init_pair(2, COLOR_RED, COLOR_BLACK);
+
   cbreak();
   noecho();
 
@@ -163,10 +175,14 @@ void draw_buffer(Buffer *buffer) {
   refresh();
 }
 
-void display_char(int y, int x, wchar_t character) {
+void display_char(int y, int x, wchar_t character, attr_t attr) {
+  attron(attr);
   cchar_t display_char;
   setcchar(&display_char, &character, 0, 0, NULL);
+
   mvadd_wch(y, x, &display_char);
+  attroff(attr);
+
   move(y, x);
   refresh();
 }
@@ -197,7 +213,8 @@ void handle_bs_key(Buffer *buffer) {
 
       display_char(
           y_cursor_pos, x_cursor_pos,
-          buffer->vect_buff[buffer->current_cu_pointer + buffer->offset]);
+          buffer->vect_buff[buffer->current_cu_pointer + buffer->offset],
+          A_NORMAL);
 
     } else if (!buffer->offset && buffer->current_cu_pointer) {
       buffer->current_cu_pointer--;
@@ -208,7 +225,8 @@ void handle_bs_key(Buffer *buffer) {
 
       display_char(
           y_cursor_pos, x_cursor_pos,
-          buffer->vect_buff[buffer->current_cu_pointer + buffer->offset]);
+          buffer->vect_buff[buffer->current_cu_pointer + buffer->offset],
+          A_NORMAL);
     }
   }
 }
@@ -229,7 +247,7 @@ void handle_enter_key(Buffer *buffer) {
 
     move(y_cursor_pos, x_cursor_pos);
   } else {
-    display_char(y_cursor_pos, x_cursor_pos, '_');
+    display_char(y_cursor_pos, x_cursor_pos, '_', COLOR_PAIR(2));
     buffer->offset++;
     x_cursor_pos++;
     move(y_cursor_pos, x_cursor_pos);
@@ -240,7 +258,7 @@ void handle_space_key(wchar_t user_input, Buffer *buffer) {
   wchar_t buffer_cu_char = buffer->vect_buff[buffer->current_cu_pointer];
 
   if (user_input != buffer_cu_char) {
-    display_char(y_cursor_pos, x_cursor_pos, '_');
+    display_char(y_cursor_pos, x_cursor_pos, '_', COLOR_PAIR(2));
     buffer->offset++;
     x_cursor_pos++;
     move(y_cursor_pos, x_cursor_pos);
@@ -253,17 +271,25 @@ void handle_space_key(wchar_t user_input, Buffer *buffer) {
 
 void handle_wrong_key(wchar_t user_input, Buffer *buffer) {
   buffer->offset++;
-  display_char(y_cursor_pos, x_cursor_pos, user_input);
+
+  if (buffer->offset)
+    display_char(y_cursor_pos, x_cursor_pos, user_input, COLOR_PAIR(2));
+  else
+    display_char(y_cursor_pos, x_cursor_pos, user_input, COLOR_PAIR(1));
+
   x_cursor_pos++;
   move(y_cursor_pos, x_cursor_pos);
-  // TODO: make the character red
 }
 
-void handle_right_key(Buffer *buffer) {
+void handle_right_key(wchar_t user_input, Buffer *buffer) {
+  if (buffer->offset)
+    display_char(y_cursor_pos, x_cursor_pos, user_input, COLOR_PAIR(2));
+  else
+    display_char(y_cursor_pos, x_cursor_pos, user_input, COLOR_PAIR(1));
+
   buffer->current_cu_pointer++;
   x_cursor_pos++;
   move(y_cursor_pos, x_cursor_pos);
-  // TODO: make the character green
 }
 
 void handle_input(wchar_t user_input, FILE *file, Buffer *buffer) {
@@ -280,7 +306,7 @@ void handle_input(wchar_t user_input, FILE *file, Buffer *buffer) {
   } else if (user_input != buffer_cu_char && buffer_cu_char != L'\n') {
     handle_wrong_key(user_input, buffer);
   } else if (user_input == buffer_cu_char) {
-    handle_right_key(buffer);
+    handle_right_key(user_input, buffer);
   }
 
   logtf("%d\n", buffer->offset);
