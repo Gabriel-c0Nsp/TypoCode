@@ -30,6 +30,7 @@ void display_char(int y, int x, wchar_t character);
 
 // user input related operations
 wchar_t get_user_input(FILE *file, Buffer *buffer);
+void handle_del_key(FILE *file, Buffer *buffer);
 void handle_input(wchar_t user_input, FILE *file, Buffer *buffer);
 
 void exit_game(int exit_status, FILE *file_path, Buffer *buffer);
@@ -178,13 +179,11 @@ wchar_t get_user_input(FILE *file, Buffer *buffer) {
   return result_char;
 }
 
+void handle_del_key(FILE *file, Buffer *buffer) { exit_game(0, file, buffer); }
 
 void handle_input(wchar_t user_input, FILE *file, Buffer *buffer) {
   wchar_t buffer_cu_char = buffer->vect_buff[buffer->current_cu_pointer];
 
-  if (user_input == 27) { // ESC
-    exit_game(0, file, buffer);
-  }
 
   if (user_input == buffer_cu_char && buffer->offset == 0) {
     buffer->current_cu_pointer++;
@@ -203,10 +202,7 @@ void handle_input(wchar_t user_input, FILE *file, Buffer *buffer) {
   logtf("buffer_char: %lc\n", buffer_cu_char);
 
   if (user_input == 27) { // ESC
-    exit_game(0, file, buffer);
-  } else if (user_input == 127) {
-    // TODO: Implement
-  } else if (user_input == L'\n') {
+    handle_del_key(file, buffer);
     // TODO: Implement
   } else if (user_input == ' ') {
     // TODO: Implement
