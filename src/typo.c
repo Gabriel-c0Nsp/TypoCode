@@ -120,7 +120,10 @@ int file_char_number(FILE *file) {
   wint_t file_char;
 
   while ((file_char = fgetwc(file)) != WEOF) {
-    char_number++;
+    if (file_char == '\t')
+      char_number += 2;
+    else
+      char_number++;
   }
 
   rewind(file);
@@ -142,6 +145,8 @@ Buffer create_buffer(FILE *file) {
     } else {
       if ((wchar_t)file_char == L'\t') {
         buffer.vect_buff[i] = L' ';
+        buffer.vect_buff[i + 1] = L' ';
+        i++;
       } else {
         buffer.vect_buff[i] = (wchar_t)file_char;
       }
