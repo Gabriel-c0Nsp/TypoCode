@@ -204,7 +204,7 @@ void handle_del_key(FILE *file, Buffer *buffer) { exit_game(0, file, buffer); }
 
 void handle_bs_key(Buffer *buffer) {
   if (buffer->current_cu_pointer || buffer->offset) {
-    if (buffer->offset > 0) {
+    if (buffer->offset) {
       buffer->offset--;
 
       x_cursor_pos--;
@@ -217,8 +217,31 @@ void handle_bs_key(Buffer *buffer) {
           A_NORMAL);
 
     } else if (!buffer->offset && buffer->current_cu_pointer) {
-      buffer->current_cu_pointer--;
+      int i = buffer->current_cu_pointer;
+      int temp_counter = 0;
 
+      do {
+        i--;
+        temp_counter++;
+
+        if (buffer->vect_buff[i] == L'\n') {
+          buffer->current_cu_pointer -= temp_counter;
+          int j = buffer->current_cu_pointer - 1;
+          x_cursor_pos = 0;
+
+          while (j >= 0 && buffer->vect_buff[j] != L'\n') {
+            x_cursor_pos++;
+            j--;
+          }
+
+          y_cursor_pos--;
+          move(y_cursor_pos, x_cursor_pos);
+
+          return;
+        }
+      } while (buffer->vect_buff[i] == L' ' && buffer->vect_buff[i] != L'\n');
+
+      buffer->current_cu_pointer--;
       x_cursor_pos--;
       if (x_cursor_pos < 0)
         x_cursor_pos = 0;
