@@ -140,7 +140,11 @@ Buffer create_buffer(FILE *file) {
     if (file_char == WEOF) {
       buffer.vect_buff[i] = L'\0';
     } else {
-      buffer.vect_buff[i] = (wchar_t)file_char;
+      if ((wchar_t)file_char == L'\t') {
+        buffer.vect_buff[i] = L' ';
+      } else {
+        buffer.vect_buff[i] = (wchar_t)file_char;
+      }
     }
   }
   buffer.vect_buff[buffer.size] = L'\0';
@@ -278,6 +282,7 @@ void handle_enter_key(Buffer *buffer) {
 }
 
 void handle_space_key(wchar_t user_input, Buffer *buffer) {
+  // FIXME: It allows too many spaces after the \n character
   wchar_t buffer_cu_char = buffer->vect_buff[buffer->current_cu_pointer];
 
   if (user_input != buffer_cu_char) {
@@ -293,6 +298,7 @@ void handle_space_key(wchar_t user_input, Buffer *buffer) {
 }
 
 void handle_wrong_key(wchar_t user_input, Buffer *buffer) {
+  // FIXME: It should output wrong key when \n is misstyped
   buffer->offset++;
 
   if (buffer->offset)
