@@ -8,6 +8,10 @@
 #include <time.h>
 #include <wchar.h>
 
+#define NO_COLOR A_NORMAL
+#define GREEN COLOR_PAIR(1)
+#define RED COLOR_PAIR(2)
+
 typedef struct Buffer {
   int current_cu_pointer;
   int offset;
@@ -158,7 +162,7 @@ Buffer create_buffer(FILE *file) {
 }
 
 void draw_buffer(Buffer *buffer) {
-  // TODO: Make 8 lines padding so it loooks better (4 at the top and 4 at the
+  // TODO: Make 8 lines padding so it looks better (4 at the top and 4 at the
   // bottom)
   // TODO: Draw line numbers
   // TODO: Implement pagination
@@ -229,7 +233,7 @@ void handle_bs_key(Buffer *buffer) {
       display_char(
           y_cursor_pos, x_cursor_pos,
           buffer->vect_buff[buffer->current_cu_pointer + buffer->offset],
-          A_NORMAL);
+          NO_COLOR);
 
     } else if (!buffer->offset && buffer->current_cu_pointer) {
       int i = buffer->current_cu_pointer;
@@ -264,7 +268,7 @@ void handle_bs_key(Buffer *buffer) {
       display_char(
           y_cursor_pos, x_cursor_pos,
           buffer->vect_buff[buffer->current_cu_pointer + buffer->offset],
-          A_NORMAL);
+          NO_COLOR);
     }
   }
 }
@@ -285,7 +289,7 @@ void handle_enter_key(Buffer *buffer) {
 
     move(y_cursor_pos, x_cursor_pos);
   } else if (buffer_cu_char != L'\n') {
-    display_char(y_cursor_pos, x_cursor_pos, '_', COLOR_PAIR(2));
+    display_char(y_cursor_pos, x_cursor_pos, '_', RED);
     buffer->offset++;
     x_cursor_pos++;
     move(y_cursor_pos, x_cursor_pos);
@@ -297,15 +301,16 @@ void handle_space_key(wchar_t user_input, Buffer *buffer) {
 
   if (user_input != buffer_cu_char && buffer_cu_char == L'\n') {
     if (!buffer->offset) {
-      display_char(y_cursor_pos, x_cursor_pos, '_', COLOR_PAIR(2));
+      display_char(y_cursor_pos, x_cursor_pos, '_', RED);
       x_cursor_pos++;
       move(y_cursor_pos, x_cursor_pos);
     }
 
     buffer->offset++;
-    if (buffer->offset > 1) buffer->offset = 1;
+    if (buffer->offset > 1)
+      buffer->offset = 1;
   } else if (user_input != buffer_cu_char) {
-    display_char(y_cursor_pos, x_cursor_pos, '_', COLOR_PAIR(2));
+    display_char(y_cursor_pos, x_cursor_pos, '_', RED);
     buffer->offset++;
     x_cursor_pos++;
     move(y_cursor_pos, x_cursor_pos);
@@ -317,23 +322,35 @@ void handle_space_key(wchar_t user_input, Buffer *buffer) {
 }
 
 void handle_wrong_key(wchar_t user_input, Buffer *buffer) {
-  // FIXME: It should output wrong key when \n is misstyped
-  buffer->offset++;
+  wchar_t buffer_cu_char = buffer->vect_buff[buffer->current_cu_pointer];
 
-  if (buffer->offset)
-    display_char(y_cursor_pos, x_cursor_pos, user_input, COLOR_PAIR(2));
-  else
-    display_char(y_cursor_pos, x_cursor_pos, user_input, COLOR_PAIR(1));
+  if (buffer_cu_char == L'\n') {
+    if (!buffer->offset) {
+      buffer->offset++;
+      display_char(y_cursor_pos, x_cursor_pos, user_input, RED);
+      x_cursor_pos++;
+      move(y_cursor_pos, x_cursor_pos);
+    } else {
+      display_char(y_cursor_pos, x_cursor_pos, user_input, RED);
+    }
+  } else {
+    buffer->offset++;
 
-  x_cursor_pos++;
-  move(y_cursor_pos, x_cursor_pos);
+    if (buffer->offset)
+      display_char(y_cursor_pos, x_cursor_pos, user_input, RED);
+    else
+      display_char(y_cursor_pos, x_cursor_pos, user_input, GREEN);
+
+    x_cursor_pos++;
+    move(y_cursor_pos, x_cursor_pos);
+  }
 }
 
 void handle_right_key(wchar_t user_input, Buffer *buffer) {
   if (buffer->offset)
-    display_char(y_cursor_pos, x_cursor_pos, user_input, COLOR_PAIR(2));
+    display_char(y_cursor_pos, x_cursor_pos, user_input, RED);
   else
-    display_char(y_cursor_pos, x_cursor_pos, user_input, COLOR_PAIR(1));
+    display_char(y_cursor_pos, x_cursor_pos, user_input, GREEN);
 
   buffer->current_cu_pointer++;
   x_cursor_pos++;
@@ -351,7 +368,7 @@ void handle_input(wchar_t user_input, FILE *file, Buffer *buffer) {
     handle_enter_key(buffer);
   } else if (user_input == ' ') {
     handle_space_key(user_input, buffer);
-  } else if (user_input != buffer_cu_char && buffer_cu_char != L'\n') {
+  } else if (user_input != buffer_cu_char) {
     handle_wrong_key(user_input, buffer);
   } else if (user_input == buffer_cu_char) {
     handle_right_key(user_input, buffer);
