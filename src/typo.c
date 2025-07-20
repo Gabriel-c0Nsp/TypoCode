@@ -158,6 +158,12 @@ Buffer create_buffer(FILE *file) {
 }
 
 void draw_buffer(Buffer *buffer) {
+  // TODO: Make 8 lines padding so it loooks better (4 at the top and 4 at the
+  // bottom)
+  // TODO: Draw line numbers
+  // TODO: Implement pagination
+  // NOTE: Remember to use LINES and COLS variables
+
   clear();
   move(0, 0);
 
@@ -287,10 +293,18 @@ void handle_enter_key(Buffer *buffer) {
 }
 
 void handle_space_key(wchar_t user_input, Buffer *buffer) {
-  // FIXME: It allows too many spaces after the \n character
   wchar_t buffer_cu_char = buffer->vect_buff[buffer->current_cu_pointer];
 
-  if (user_input != buffer_cu_char) {
+  if (user_input != buffer_cu_char && buffer_cu_char == L'\n') {
+    if (!buffer->offset) {
+      display_char(y_cursor_pos, x_cursor_pos, '_', COLOR_PAIR(2));
+      x_cursor_pos++;
+      move(y_cursor_pos, x_cursor_pos);
+    }
+
+    buffer->offset++;
+    if (buffer->offset > 1) buffer->offset = 1;
+  } else if (user_input != buffer_cu_char) {
     display_char(y_cursor_pos, x_cursor_pos, '_', COLOR_PAIR(2));
     buffer->offset++;
     x_cursor_pos++;
