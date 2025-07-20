@@ -272,7 +272,7 @@ void handle_bs_key(Buffer *buffer) {
 void handle_enter_key(Buffer *buffer) {
   wchar_t buffer_cu_char = buffer->vect_buff[buffer->current_cu_pointer];
 
-  if (buffer_cu_char == L'\n') {
+  if (buffer_cu_char == L'\n' && !buffer->offset) {
     y_cursor_pos++;
     x_cursor_pos = 0;
 
@@ -284,7 +284,7 @@ void handle_enter_key(Buffer *buffer) {
     } while (buffer_cu_char == L' ');
 
     move(y_cursor_pos, x_cursor_pos);
-  } else {
+  } else if (buffer_cu_char != L'\n') {
     display_char(y_cursor_pos, x_cursor_pos, '_', COLOR_PAIR(2));
     buffer->offset++;
     x_cursor_pos++;
