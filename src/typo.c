@@ -373,10 +373,6 @@ void handle_input(wchar_t user_input, FILE *file, Buffer *buffer) {
   } else if (user_input == buffer_cu_char) {
     handle_right_key(user_input, buffer);
   }
-
-  logtf("%d\n", buffer->offset);
-  logtf("user_input: %lc\n", user_input);
-  logtf("buffer_char: %lc\n", buffer_cu_char);
 }
 
 void exit_game(int exit_status, FILE *file_path, Buffer *buffer) {
