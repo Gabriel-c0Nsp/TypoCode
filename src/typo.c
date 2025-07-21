@@ -32,6 +32,8 @@ FILE *open_file(char *argv);
 void close_file(FILE *file);
 
 // buffer related operations
+FileInformation get_file_information(FileInformation *file_info, FILE *file);
+Buffer set_pages(Buffer *pages, FileInformation *file_info);
 int file_char_number(FILE *file);
 Buffer create_buffer(FILE *file);
 void draw_buffer(Buffer *buffer);
@@ -79,13 +81,27 @@ int main(int argc, char *argv[]) {
   cbreak();
   noecho();
 
-  Buffer buffer = create_buffer(file);
+  // for testing purposes
+  /* Buffer buffer = create_buffer(file); */
+  FileInformation file_info;
 
-  draw_buffer(&buffer);
+  file_info = get_file_information(&file_info, file);
 
-  while (1) {
-    handle_input(get_user_input(file, &buffer), file, &buffer);
+  /* draw_buffer(&buffer); */
+
+  // comented out for debug purposes
+  /* while (1) { */
+  /*   handle_input(get_user_input(file, &buffer), file, &buffer); */
+  /* } */
+
+  // TEST:
+  // NOTE: Delete this later
+  while (getch() != 'q') {
+    printw("Número de letras no arquivo: %d\n", file_info.number_of_characters);
+    printw("Número de linhas no arquivo: %d\n", file_info.number_of_lines);
   }
+
+  endwin();
 
   close_file(file);
 
@@ -123,6 +139,27 @@ FILE *open_file(char *argv) {
 }
 
 void close_file(FILE *file) { fclose(file); }
+
+FileInformation get_file_information(FileInformation *file_info, FILE *file) {
+  int number_of_characters = 0;
+  wint_t file_char;
+  int number_of_lines = 0;
+
+  while ((file_char = fgetwc(file)) != WEOF) {
+    if (file_char == '\t')
+      number_of_characters += 2;
+    else
+      number_of_characters++;
+
+    if (file_char == '\n' || file_char == '\0') number_of_lines++;
+  }
+
+  file_info->number_of_characters = number_of_characters;
+  file_info->number_of_lines = number_of_lines;
+
+  rewind(file);
+  return *file_info;
+}
 
 int file_char_number(FILE *file) {
   int char_number = 0;
