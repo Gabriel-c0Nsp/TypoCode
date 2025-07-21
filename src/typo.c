@@ -19,6 +19,12 @@ typedef struct Buffer {
   wchar_t *vect_buff;
 } Buffer;
 
+typedef struct NoBuffer {
+  Buffer buffer;
+  struct NoBuffer *proximo;
+  struct NoBuffer *anterior;
+} NoBuffer;
+
 typedef struct FileInformation {
   int number_of_characters;
   int number_of_lines;
