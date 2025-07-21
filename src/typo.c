@@ -19,7 +19,7 @@ typedef struct Buffer {
   wchar_t *vect_buff;
 } Buffer;
 
-typedef struct NoBuffer {
+typedef struct NodeBuffer {
   Buffer buffer;
   struct NoBuffer *proximo;
   struct NoBuffer *anterior;
@@ -39,9 +39,11 @@ void close_file(FILE *file);
 
 // buffer related operations
 FileInformation get_file_information(FileInformation *file_info, FILE *file);
-Buffer set_pages(Buffer *pages, FileInformation *file_info);
 int file_char_number(FILE *file);
 Buffer create_buffer(FILE *file);
+NoBuffer *create_buffer_node(Buffer *buffer);
+Buffer set_pages(Buffer *pages, FILE *file, FileInformation *file_info);
+
 void draw_buffer(Buffer *buffer);
 void display_char(int y, int x, wchar_t character, attr_t attr);
 
@@ -157,7 +159,8 @@ FileInformation get_file_information(FileInformation *file_info, FILE *file) {
     else
       number_of_characters++;
 
-    if (file_char == '\n' || file_char == '\0') number_of_lines++;
+    if (file_char == '\n' || file_char == '\0')
+      number_of_lines++;
   }
 
   file_info->number_of_characters = number_of_characters;
@@ -183,30 +186,33 @@ int file_char_number(FILE *file) {
 }
 
 Buffer create_buffer(FILE *file) {
-  int char_number = file_char_number(file);
+  int buffer_capacity = LINES - 8;
+  int current_capacity = 0;
 
   Buffer buffer;
-  buffer.current_cu_pointer = 0;
-  buffer.size = char_number;
-  buffer.vect_buff = calloc(buffer.size + 1, sizeof(wchar_t));
+  buffer.size = 0;
+  wint_t file_char;
 
-  for (int i = 0; i < buffer.size; i++) {
-    wint_t file_char = fgetwc(file);
-    if (file_char == WEOF) {
-      buffer.vect_buff[i] = L'\0';
-    } else {
-      if ((wchar_t)file_char == L'\t') {
-        buffer.vect_buff[i] = L' ';
-        buffer.vect_buff[i + 1] = L' ';
-        i++;
-      } else {
-        buffer.vect_buff[i] = (wchar_t)file_char;
-      }
-    }
+  while (current_capacity != buffer_capacity && (wchar_t)file_char != WEOF) {
+    file_char = fgetwc(file);
+
+    if ((wchar_t)file_char == '\t')
+      buffer.size += 2;
+    else
+      buffer.size++;
+
+    if ((wchar_t)file_char == L'\n' || (wchar_t)file_char == L'\0')
+      current_capacity++;
   }
-  buffer.vect_buff[buffer.size] = L'\0';
-
   return buffer;
+}
+
+NoBuffer *create_buffer_node(Buffer *buffer) {
+  // TODO: create a buffer node and allocate memory to buffer.vect
+}
+
+Buffer set_pages(Buffer *pages, FILE *file, FileInformation *file_info) {
+
 }
 
 void draw_buffer(Buffer *buffer) {
