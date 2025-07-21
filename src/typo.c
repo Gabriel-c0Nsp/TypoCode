@@ -19,6 +19,11 @@ typedef struct Buffer {
   wchar_t *vect_buff;
 } Buffer;
 
+typedef struct FileInformation {
+  int number_of_characters;
+  int number_of_lines;
+} FileInformation;
+
 // log/debug functions
 void logtf(const char *fmt, ...);
 
