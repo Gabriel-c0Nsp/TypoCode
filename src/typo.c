@@ -12,9 +12,10 @@
 #define GREEN COLOR_PAIR(1)
 #define RED COLOR_PAIR(2)
 
-#define PADDING 8;
+#define PADDING 8
 
 typedef struct Buffer {
+  int page_number;
   int current_cu_pointer;
   int offset;
   int size;
@@ -30,6 +31,7 @@ typedef struct NodeBuffer {
 typedef struct FileInformation {
   int number_of_characters;
   int number_of_lines;
+  int number_of_buffers;
 } FileInformation;
 
 // log/debug functions
@@ -44,7 +46,7 @@ FileInformation get_file_information(FileInformation *file_info, FILE *file);
 int file_char_number(FILE *file);
 Buffer create_buffer(FILE *file);
 NodeBuffer *create_buffer_node(FILE *file);
-Buffer set_pages(Buffer *pages, FILE *file, FileInformation *file_info);
+void set_pages(NodeBuffer **pages, FILE *file, FileInformation *file_info);
 
 void draw_buffer(Buffer *buffer);
 void display_char(int y, int x, wchar_t character, attr_t attr);
@@ -167,6 +169,8 @@ FileInformation get_file_information(FileInformation *file_info, FILE *file) {
 
   file_info->number_of_characters = number_of_characters;
   file_info->number_of_lines = number_of_lines;
+  file_info->number_of_buffers =
+      (file_info->number_of_lines / (LINES - PADDING)) + 1;
 
   rewind(file);
   return *file_info;
@@ -211,7 +215,7 @@ Buffer create_buffer(FILE *file) {
   if ((wchar_t)file_char == WEOF)
     rewind(file);
 
-
+  buffer.page_number = 0;
   buffer.current_cu_pointer = 0;
   buffer.offset = 0;
   buffer.vect_buff = calloc(buffer.size + 1, sizeof(wchar_t));
@@ -237,7 +241,47 @@ NodeBuffer *create_buffer_node(FILE *file) {
   return new_node;
 }
 
-Buffer set_pages(Buffer *pages, FILE *file, FileInformation *file_info) {}
+void set_pages(NodeBuffer **pages, FILE *file, FileInformation *file_info) {
+  int current_number_of_buffers = 0;
+  wint_t file_char;
+
+  while (file_info->number_of_buffers <= current_number_of_buffers) {
+    NodeBuffer *new_node = create_buffer_node(file);
+
+    if (*pages == NULL) {
+      *pages = new_node;
+    } else {
+      NodeBuffer *temp = *pages;
+
+      while (temp->proximo != NULL) {
+        temp = temp->proximo;
+      }
+
+      temp->proximo = new_node;
+      new_node->anterior = temp;
+    }
+
+    current_number_of_buffers++;
+    new_node->buffer->page_number = current_number_of_buffers;
+
+    // insert content into current buffer
+    for (int i = 0; i < new_node->buffer->size; i++) {
+      wint_t file_char = fgetwc(file);
+      if (file_char == WEOF) {
+        new_node->buffer->vect_buff[i] = L'\0';
+      } else {
+        if ((wchar_t)file_char == L'\t') {
+          new_node->buffer->vect_buff[i] = L' ';
+          new_node->buffer->vect_buff[i + 1] = L' ';
+          i++;
+        } else {
+          new_node->buffer->vect_buff[i] = (wchar_t)file_char;
+        }
+      }
+    }
+    new_node->buffer->vect_buff[new_node->buffer->size] = L'\0';
+  }
+}
 
 void draw_buffer(Buffer *buffer) {
   // TODO: Make 8 lines padding so it looks better (4 at the top and 4 at the
