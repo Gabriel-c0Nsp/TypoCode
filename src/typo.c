@@ -12,6 +12,8 @@
 #define GREEN COLOR_PAIR(1)
 #define RED COLOR_PAIR(2)
 
+#define PADDING 8;
+
 typedef struct Buffer {
   int current_cu_pointer;
   int offset;
@@ -20,10 +22,10 @@ typedef struct Buffer {
 } Buffer;
 
 typedef struct NodeBuffer {
-  Buffer buffer;
-  struct NoBuffer *proximo;
-  struct NoBuffer *anterior;
-} NoBuffer;
+  struct Buffer *buffer;
+  struct NodeBuffer *proximo;
+  struct NodeBuffer *anterior;
+} NodeBuffer;
 
 typedef struct FileInformation {
   int number_of_characters;
@@ -41,7 +43,7 @@ void close_file(FILE *file);
 FileInformation get_file_information(FileInformation *file_info, FILE *file);
 int file_char_number(FILE *file);
 Buffer create_buffer(FILE *file);
-NoBuffer *create_buffer_node(Buffer *buffer);
+NodeBuffer *create_buffer_node(FILE *file);
 Buffer set_pages(Buffer *pages, FILE *file, FileInformation *file_info);
 
 void draw_buffer(Buffer *buffer);
@@ -186,11 +188,12 @@ int file_char_number(FILE *file) {
 }
 
 Buffer create_buffer(FILE *file) {
-  int buffer_capacity = LINES - 8;
+  int buffer_capacity = LINES - PADDING;
   int current_capacity = 0;
 
   Buffer buffer;
   buffer.size = 0;
+
   wint_t file_char;
 
   while (current_capacity != buffer_capacity && (wchar_t)file_char != WEOF) {
@@ -204,16 +207,37 @@ Buffer create_buffer(FILE *file) {
     if ((wchar_t)file_char == L'\n' || (wchar_t)file_char == L'\0')
       current_capacity++;
   }
+
+  if ((wchar_t)file_char == WEOF)
+    rewind(file);
+
+
+  buffer.current_cu_pointer = 0;
+  buffer.offset = 0;
+  buffer.vect_buff = calloc(buffer.size + 1, sizeof(wchar_t));
+
   return buffer;
 }
 
-NoBuffer *create_buffer_node(Buffer *buffer) {
+NodeBuffer *create_buffer_node(FILE *file) {
   // TODO: create a buffer node and allocate memory to buffer.vect
+  NodeBuffer *new_node = (NodeBuffer *)malloc(sizeof(NodeBuffer));
+
+  if (new_node == NULL) {
+    fprintf(stderr, "couldn't allocate memory for a new node.\nAborting...\n");
+    exit(1);
+  }
+
+  // TODO: create a node
+  Buffer new_buffer = create_buffer(file);
+  new_node->buffer = &new_buffer;
+  new_node->proximo = NULL;
+  new_node->anterior = NULL;
+
+  return new_node;
 }
 
-Buffer set_pages(Buffer *pages, FILE *file, FileInformation *file_info) {
-
-}
+Buffer set_pages(Buffer *pages, FILE *file, FileInformation *file_info) {}
 
 void draw_buffer(Buffer *buffer) {
   // TODO: Make 8 lines padding so it looks better (4 at the top and 4 at the
