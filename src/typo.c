@@ -52,14 +52,14 @@ void draw_buffer(Buffer *buffer);
 void display_char(int y, int x, wchar_t character, attr_t attr);
 
 // user input related operations
-wchar_t get_user_input(FILE *file, Buffer *buffer);
-void handle_del_key(FILE *file, Buffer *buffer);
-void handle_bs_key(Buffer *buffer);
-void handle_enter_key(Buffer *buffer);
+wchar_t get_user_input(FILE *file, NodeBuffer **pages);
+void handle_del_key(FILE *file, NodeBuffer **pages);
+void handle_bs_key(NodeBuffer **pages);
+void handle_enter_key(NodeBuffer **pages);
 void handle_space_key(wchar_t user_input, Buffer *buffer);
 void handle_wrong_key(wchar_t user_input, Buffer *buffer);
 void handle_right_key(wchar_t user_input, Buffer *buffer);
-void handle_input(wchar_t user_input, FILE *file, Buffer *buffer);
+void handle_input(wchar_t user_input, FILE *file, NodeBuffer **pages);
 
 void exit_game(int exit_status, FILE *file_path, Buffer *buffer);
 
@@ -328,25 +328,28 @@ void display_char(int y, int x, wchar_t character, attr_t attr) {
   refresh();
 }
 
-wchar_t get_user_input(FILE *file, Buffer *buffer) {
+wchar_t get_user_input(FILE *file, NodeBuffer **pages) {
   wint_t user_input;
   int result = get_wch(&user_input);
 
   if (result == ERR) {
     fprintf(stderr, "Some error occurred while typing\n");
-    exit_game(1, file, buffer);
+    exit_game(1, file, pages);
   }
 
   wchar_t result_char = (wchar_t)user_input;
   return result_char;
 }
 
-void handle_del_key(FILE *file, Buffer *buffer) { exit_game(0, file, buffer); }
+void handle_del_key(FILE *file, NodeBuffer **pages) {
+  exit_game(0, file, pages);
+}
 
-void handle_bs_key(Buffer *buffer) {
-  if (buffer->current_cu_pointer || buffer->offset) {
-    if (buffer->offset) {
-      buffer->offset--;
+void handle_bs_key(NodeBuffer **pages) {
+  // TODO: Draw buffer depending on the key the user is deleting
+  if ((*pages)->buffer->current_cu_pointer || (*pages)->buffer->offset) {
+    if ((*pages)->buffer->offset) {
+      (*pages)->buffer->offset--;
 
       x_cursor_pos--;
       if (x_cursor_pos < 0)
@@ -354,23 +357,25 @@ void handle_bs_key(Buffer *buffer) {
 
       display_char(
           y_cursor_pos, x_cursor_pos,
-          buffer->vect_buff[buffer->current_cu_pointer + buffer->offset],
+          (*pages)->buffer->vect_buff[(*pages)->buffer->current_cu_pointer +
+                                      (*pages)->buffer->offset],
           NO_COLOR);
 
-    } else if (!buffer->offset && buffer->current_cu_pointer) {
-      int i = buffer->current_cu_pointer;
+    } else if (!(*pages)->buffer->offset &&
+               (*pages)->buffer->current_cu_pointer) {
+      int i = (*pages)->buffer->current_cu_pointer;
       int temp_counter = 0;
 
       do {
         i--;
         temp_counter++;
 
-        if (buffer->vect_buff[i] == L'\n') {
-          buffer->current_cu_pointer -= temp_counter;
-          int j = buffer->current_cu_pointer - 1;
+        if ((*pages)->buffer->vect_buff[i] == L'\n') {
+          (*pages)->buffer->current_cu_pointer -= temp_counter;
+          int j = (*pages)->buffer->current_cu_pointer - 1;
           x_cursor_pos = 0;
 
-          while (j >= 0 && buffer->vect_buff[j] != L'\n') {
+          while (j >= 0 && (*pages)->buffer->vect_buff[j] != L'\n') {
             x_cursor_pos++;
             j--;
           }
@@ -380,31 +385,37 @@ void handle_bs_key(Buffer *buffer) {
 
           return;
         }
-      } while (buffer->vect_buff[i] == L' ' && buffer->vect_buff[i] != L'\n');
+      } while ((*pages)->buffer->vect_buff[i] == L' ' &&
+               (*pages)->buffer->vect_buff[i] != L'\n');
 
-      buffer->current_cu_pointer--;
+      (*pages)->buffer->current_cu_pointer--;
       x_cursor_pos--;
       if (x_cursor_pos < 0)
         x_cursor_pos = 0;
 
       display_char(
           y_cursor_pos, x_cursor_pos,
-          buffer->vect_buff[buffer->current_cu_pointer + buffer->offset],
+          (*pages)->buffer->vect_buff[(*pages)->buffer->current_cu_pointer +
+                                      (*pages)->buffer->offset],
           NO_COLOR);
     }
   }
 }
 
-void handle_enter_key(Buffer *buffer) {
-  wchar_t buffer_cu_char = buffer->vect_buff[buffer->current_cu_pointer];
+void handle_enter_key(NodeBuffer **pages) {
+  // TODO: Needs to point to the next pages->buffer if the user gets to the end
+  // of the buffer
+  wchar_t buffer_cu_char =
+      (*pages)->buffer->vect_buff[(*pages)->buffer->current_cu_pointer];
 
-  if (buffer_cu_char == L'\n' && !buffer->offset) {
+  if (buffer_cu_char == L'\n' && !(*pages)->buffer->offset) {
     y_cursor_pos++;
     x_cursor_pos = 0;
 
     do {
-      buffer->current_cu_pointer++;
-      buffer_cu_char = buffer->vect_buff[buffer->current_cu_pointer];
+      (*pages)->buffer->current_cu_pointer++;
+      buffer_cu_char =
+          (*pages)->buffer->vect_buff[(*pages)->buffer->current_cu_pointer];
       if (buffer_cu_char == L' ')
         x_cursor_pos++;
     } while (buffer_cu_char == L' ');
@@ -412,7 +423,7 @@ void handle_enter_key(Buffer *buffer) {
     move(y_cursor_pos, x_cursor_pos);
   } else if (buffer_cu_char != L'\n') {
     display_char(y_cursor_pos, x_cursor_pos, '_', RED);
-    buffer->offset++;
+    (*pages)->buffer->offset++;
     x_cursor_pos++;
     move(y_cursor_pos, x_cursor_pos);
   }
@@ -479,21 +490,22 @@ void handle_right_key(wchar_t user_input, Buffer *buffer) {
   move(y_cursor_pos, x_cursor_pos);
 }
 
-void handle_input(wchar_t user_input, FILE *file, Buffer *buffer) {
-  wchar_t buffer_cu_char = buffer->vect_buff[buffer->current_cu_pointer];
+void handle_input(wchar_t user_input, FILE *file, NodeBuffer **pages) {
+  wchar_t buffer_cu_char =
+      (*pages)->buffer->vect_buff[(*pages)->buffer->current_cu_pointer];
 
   if (user_input == 27) { // ESC
-    handle_del_key(file, buffer);
+    handle_del_key(file, pages);
   } else if (user_input == 127) { // BACKSPACE
-    handle_bs_key(buffer);
+    handle_bs_key(pages);
   } else if (user_input == '\n') {
-    handle_enter_key(buffer);
+    handle_enter_key(pages);
   } else if (user_input == ' ') {
-    handle_space_key(user_input, buffer);
+    handle_space_key(user_input, (*pages)->buffer);
   } else if (user_input != buffer_cu_char) {
-    handle_wrong_key(user_input, buffer);
+    handle_wrong_key(user_input, (*pages)->buffer);
   } else if (user_input == buffer_cu_char) {
-    handle_right_key(user_input, buffer);
+    handle_right_key(user_input, (*pages)->buffer);
   }
 }
 
