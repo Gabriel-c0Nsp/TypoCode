@@ -108,22 +108,31 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  draw_buffer(pages->buffer);
-
-  // comented out for debug purposes
+  /* draw_buffer(pages->buffer); */
+  /* draw_buffer(pages->proximo->buffer); */
+  /* draw_buffer(pages->proximo->proximo->buffer); */
+  draw_buffer(pages->proximo->proximo->proximo->buffer);
   while (1) {
     handle_input(get_user_input(file, &pages), file, &pages);
-    /* handle_pages(&pages, &file_info, file); */
   }
 
   // TEST:
   // NOTE: Delete this later
-  while (getch() != 'q') {
-    printw("Número de letras no arquivo: %d\n", file_info.number_of_characters);
-    printw("Número de linhas no arquivo: %d\n", file_info.number_of_lines);
-  }
-
-  endwin();
+  /* while (getch() != 'q') { */
+  /*   printw("Número de letras no arquivo: %d\n",
+   * file_info.number_of_characters); */
+  /*   printw("Número de linhas no arquivo: %d\n", file_info.number_of_lines);
+   */
+  /*   printw("Número de buffers: %d\n", file_info.number_of_buffers); */
+  /*   printw("Número de linhas disponívels no terminal: %d\n", LINES); */
+  /*   printw("Posição atual do cursor do buffer: %d\n",
+   * pages->buffer->current_cu_pointer); */
+  /*   printw("Número do buffer atual: %d\n", pages->buffer->page_number); */
+  /*   printw("Primeira letra do primeiro buffer: %lc\n",
+   * pages->buffer->vect_buff[2]); */
+  /* } */
+  /**/
+  /* endwin(); */
 
   close_file(file);
 
@@ -165,69 +174,107 @@ void close_file(FILE *file) { fclose(file); }
 FileInformation get_file_information(FileInformation *file_info, FILE *file) {
   int number_of_characters = 0;
   wint_t file_char;
-  int number_of_lines = 0;
+  int number_of_lines = 1;
 
   while ((file_char = fgetwc(file)) != WEOF) {
-    if (file_char == '\t')
-      number_of_characters += 2;
-    else
+    if (file_char == '\t') {
+      number_of_characters += 2; // tab will become two spaces
+    } else {
       number_of_characters++;
+    }
 
-    if (file_char == '\n' || file_char == '\0')
+    if (file_char == '\n') {
       number_of_lines++;
+    }
+  }
+
+  // Se o arquivo está vazio
+  if (number_of_characters == 0) {
+    number_of_lines = 0;
   }
 
   file_info->number_of_characters = number_of_characters;
   file_info->number_of_lines = number_of_lines;
+
+  // Calcular número de buffers baseado nas linhas disponíveis
+  int lines_per_buffer = LINES - PADDING;
+  if (lines_per_buffer <= 0)
+    lines_per_buffer = 1; // at least one line per buffer
+
   file_info->number_of_buffers =
-      (file_info->number_of_lines / (LINES - PADDING)) + 1;
+      (number_of_lines + lines_per_buffer - 1) / lines_per_buffer;
+  if (file_info->number_of_buffers == 0) {
+    file_info->number_of_buffers = 1; // pelo menos 1 buffer
+  }
 
   rewind(file);
   return *file_info;
 }
 
-int file_char_number(FILE *file) {
-  int char_number = 0;
-  wint_t file_char;
-
-  while ((file_char = fgetwc(file)) != WEOF) {
-    if (file_char == '\t')
-      char_number += 2;
-    else
-      char_number++;
-  }
-
-  rewind(file);
-  return char_number;
-}
-
 Buffer create_buffer(FILE *file) {
   int buffer_capacity = LINES - PADDING;
-  int current_capacity = 0;
+  int current_lines = 0;
+  int char_count = 0;
 
   Buffer buffer;
-  buffer.size = 0;
-
-  wint_t file_char;
-
-  while (current_capacity != buffer_capacity &&
-         (file_char = fgetwc(file)) != WEOF) {
-    if ((wchar_t)file_char == '\t')
-      buffer.size += 2;
-    else
-      buffer.size++;
-
-    if ((wchar_t)file_char == L'\n' || (wchar_t)file_char == L'\0')
-      current_capacity++;
-  }
-
-  if (file_char == WEOF)
-    rewind(file);
-
   buffer.page_number = 0;
   buffer.current_cu_pointer = 0;
   buffer.offset = 0;
+
+  // Count how many characters the buffer needs to able to store
+  long start_pos = ftell(file);
+  wint_t file_char;
+
+  while (current_lines < buffer_capacity &&
+         (file_char = fgetwc(file)) != WEOF) {
+    if ((wchar_t)file_char == L'\t') {
+      char_count += 2; // one tab char later will become two spaces char
+    } else {
+      char_count++;
+    }
+
+    if ((wchar_t)file_char == L'\n') {
+      current_lines++;
+    }
+  }
+
+  buffer.size = char_count;
   buffer.vect_buff = calloc(buffer.size + 1, sizeof(wchar_t));
+
+  if (buffer.vect_buff == NULL) {
+    fprintf(stderr, "Erro ao alocar memória para o buffer\n");
+    exit(1);
+  }
+
+  fseek(file, start_pos, SEEK_SET);
+
+  // Ler o conteúdo do buffer
+  current_lines = 0;
+  int i = 0;
+
+  while (current_lines < buffer_capacity &&
+         (file_char = fgetwc(file)) != WEOF && i < buffer.size) {
+
+    if ((wchar_t)file_char == L'\t') {
+      buffer.vect_buff[i++] = L' ';
+      if (i < buffer.size) {
+        buffer.vect_buff[i++] = L' ';
+      }
+    } else {
+      buffer.vect_buff[i++] = (wchar_t)file_char;
+    }
+
+    if ((wchar_t)file_char == L'\n') {
+      current_lines++;
+    }
+  }
+
+  // CORREÇÃO: Garantir que o buffer termine com \0
+  if (i <= buffer.size) {
+    buffer.vect_buff[i] = L'\0';
+    // Atualizar o tamanho real do buffer
+    buffer.size = i;
+  }
 
   return buffer;
 }
@@ -236,13 +283,18 @@ NodeBuffer *create_buffer_node(FILE *file) {
   NodeBuffer *new_node = malloc(sizeof(NodeBuffer));
 
   if (new_node == NULL) {
-    fprintf(stderr, "couldn't allocate memory for a new node.\nAborting...\n");
+    fprintf(stderr, "Couldn't allocate memory for a new node in NodeBuffer "
+                    "doubly-linked list!\nAborting...\n");
     exit(1);
   }
 
   Buffer *new_buffer = malloc(sizeof(Buffer));
-  *new_buffer = create_buffer(file);
+  if (new_buffer == NULL) {
+    fprintf(stderr, "Couldn't allocate memory for a new Buffer\nAborting...\n");
+    exit(1);
+  }
 
+  *new_buffer = create_buffer(file);
   new_node->buffer = new_buffer;
   new_node->proximo = NULL;
   new_node->anterior = NULL;
@@ -252,20 +304,18 @@ NodeBuffer *create_buffer_node(FILE *file) {
 
 void set_pages(NodeBuffer **pages, FILE *file, FileInformation *file_info) {
   int current_number_of_buffers = 0;
-  wint_t file_char;
 
   while (current_number_of_buffers < file_info->number_of_buffers) {
     NodeBuffer *new_node = create_buffer_node(file);
 
+    // add a node at the end of the doubly linked list
     if (*pages == NULL) {
       *pages = new_node;
     } else {
       NodeBuffer *temp = *pages;
-
       while (temp->proximo != NULL) {
         temp = temp->proximo;
       }
-
       temp->proximo = new_node;
       new_node->anterior = temp;
     }
@@ -273,32 +323,20 @@ void set_pages(NodeBuffer **pages, FILE *file, FileInformation *file_info) {
     current_number_of_buffers++;
     new_node->buffer->page_number = current_number_of_buffers;
 
-    // insert content into current buffer
-    for (int i = 0; i < new_node->buffer->size; i++) {
-      file_char = fgetwc(file);
-      if (file_char == WEOF) {
-        new_node->buffer->vect_buff[i] = L'\0';
-      } else {
-        if ((wchar_t)file_char == L'\t') { // simulate two spaces tab
-          new_node->buffer->vect_buff[i] = L' ';
-          new_node->buffer->vect_buff[i + 1] = L' ';
-          i++;
-        } else {
-          new_node->buffer->vect_buff[i] = (wchar_t)file_char;
-        }
-      }
+    if (feof(file) == WEOF) {
+      break;
     }
-    new_node->buffer->vect_buff[new_node->buffer->size] = L'\0';
   }
 }
 
 void handle_pages(NodeBuffer **pages, FileInformation *file_info, FILE *file) {
   /*
-
+    // TODO: Implement
   */
 }
 
 void draw_buffer(Buffer *buffer) {
+  // FIX: sometimes draws an extra "@" at the end
   // TODO: Make 8 lines padding so it looks better (4 at the top and 4 at the
   // bottom)
   // TODO: Draw line numbers
@@ -362,6 +400,8 @@ void handle_del_key(FILE *file, NodeBuffer **pages) {
 }
 
 void handle_bs_key(NodeBuffer **pages) {
+  // FIX: with the new updates to a new data structure, don't delete the last
+  // character of the line if it was typed wrong
   // TODO: Draw buffer depending on the key the user is deleting
   if ((*pages)->buffer->current_cu_pointer || (*pages)->buffer->offset) {
     if ((*pages)->buffer->offset) {
