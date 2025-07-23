@@ -61,7 +61,8 @@ void handle_wrong_key(wchar_t user_input, Buffer *buffer);
 void handle_right_key(wchar_t user_input, Buffer *buffer);
 void handle_input(wchar_t user_input, FILE *file, NodeBuffer **pages);
 
-void exit_game(int exit_status, FILE *file_path, Buffer *buffer);
+void free_pages(NodeBuffer **pages);
+void exit_game(int exit_status, FILE *file_path, NodeBuffer **pages);
 
 // cursor position global variables
 int y_cursor_pos = 0;
@@ -509,9 +510,23 @@ void handle_input(wchar_t user_input, FILE *file, NodeBuffer **pages) {
   }
 }
 
-void exit_game(int exit_status, FILE *file_path, Buffer *buffer) {
+void free_pages(NodeBuffer **pages) {
+  NodeBuffer *current = *pages;
+
+  while (current != NULL) {
+    NodeBuffer *next = current->proximo;
+    free(current->buffer->vect_buff);
+    free(current->buffer);
+    free(current);
+    current = next;
+  }
+
+  *pages = NULL;
+}
+
+void exit_game(int exit_status, FILE *file_path, NodeBuffer **pages) {
   endwin();
   close_file(file_path);
-  free(buffer->vect_buff);
+  free_pages(pages);
   exit(exit_status);
 }
