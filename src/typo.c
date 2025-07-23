@@ -48,6 +48,7 @@ Buffer create_buffer(FILE *file);
 NodeBuffer *create_buffer_node(FILE *file);
 void set_pages(NodeBuffer **pages, FILE *file, FileInformation *file_info);
 
+void handle_pages(NodeBuffer **pages, FileInformation *file_info, FILE *file);
 void draw_buffer(Buffer *buffer);
 void display_char(int y, int x, wchar_t character, attr_t attr);
 
@@ -94,18 +95,26 @@ int main(int argc, char *argv[]) {
   cbreak();
   noecho();
 
-  // for testing purposes
-  /* Buffer buffer = create_buffer(file); */
   FileInformation file_info;
 
   file_info = get_file_information(&file_info, file);
+  NodeBuffer *pages = NULL;
+  set_pages(&pages, file, &file_info);
 
-  /* draw_buffer(&buffer); */
+  if (pages == NULL) {
+    fprintf(stderr, "Something went wrong while allocating memory for "
+                    "buffers!\nAborting...\n");
+    endwin();
+    exit(1);
+  }
+
+  draw_buffer(pages->buffer);
 
   // comented out for debug purposes
-  /* while (1) { */
-  /*   handle_input(get_user_input(file, &buffer), file, &buffer); */
-  /* } */
+  while (1) {
+    handle_input(get_user_input(file, &pages), file, &pages);
+    /* handle_pages(&pages, &file_info, file); */
+  }
 
   // TEST:
   // NOTE: Delete this later
@@ -201,9 +210,8 @@ Buffer create_buffer(FILE *file) {
 
   wint_t file_char;
 
-  while (current_capacity != buffer_capacity && (wchar_t)file_char != WEOF) {
-    file_char = fgetwc(file);
-
+  while (current_capacity != buffer_capacity &&
+         (file_char = fgetwc(file)) != WEOF) {
     if ((wchar_t)file_char == '\t')
       buffer.size += 2;
     else
@@ -213,7 +221,7 @@ Buffer create_buffer(FILE *file) {
       current_capacity++;
   }
 
-  if ((wchar_t)file_char == WEOF)
+  if (file_char == WEOF)
     rewind(file);
 
   buffer.page_number = 0;
@@ -225,17 +233,17 @@ Buffer create_buffer(FILE *file) {
 }
 
 NodeBuffer *create_buffer_node(FILE *file) {
-  // TODO: create a buffer node and allocate memory to buffer.vect
-  NodeBuffer *new_node = (NodeBuffer *)malloc(sizeof(NodeBuffer));
+  NodeBuffer *new_node = malloc(sizeof(NodeBuffer));
 
   if (new_node == NULL) {
     fprintf(stderr, "couldn't allocate memory for a new node.\nAborting...\n");
     exit(1);
   }
 
-  // TODO: create a node
-  Buffer new_buffer = create_buffer(file);
-  new_node->buffer = &new_buffer;
+  Buffer *new_buffer = malloc(sizeof(Buffer));
+  *new_buffer = create_buffer(file);
+
+  new_node->buffer = new_buffer;
   new_node->proximo = NULL;
   new_node->anterior = NULL;
 
@@ -246,7 +254,7 @@ void set_pages(NodeBuffer **pages, FILE *file, FileInformation *file_info) {
   int current_number_of_buffers = 0;
   wint_t file_char;
 
-  while (file_info->number_of_buffers <= current_number_of_buffers) {
+  while (current_number_of_buffers < file_info->number_of_buffers) {
     NodeBuffer *new_node = create_buffer_node(file);
 
     if (*pages == NULL) {
@@ -267,11 +275,11 @@ void set_pages(NodeBuffer **pages, FILE *file, FileInformation *file_info) {
 
     // insert content into current buffer
     for (int i = 0; i < new_node->buffer->size; i++) {
-      wint_t file_char = fgetwc(file);
+      file_char = fgetwc(file);
       if (file_char == WEOF) {
         new_node->buffer->vect_buff[i] = L'\0';
       } else {
-        if ((wchar_t)file_char == L'\t') {
+        if ((wchar_t)file_char == L'\t') { // simulate two spaces tab
           new_node->buffer->vect_buff[i] = L' ';
           new_node->buffer->vect_buff[i + 1] = L' ';
           i++;
@@ -284,6 +292,12 @@ void set_pages(NodeBuffer **pages, FILE *file, FileInformation *file_info) {
   }
 }
 
+void handle_pages(NodeBuffer **pages, FileInformation *file_info, FILE *file) {
+  /*
+
+  */
+}
+
 void draw_buffer(Buffer *buffer) {
   // TODO: Make 8 lines padding so it looks better (4 at the top and 4 at the
   // bottom)
@@ -292,7 +306,7 @@ void draw_buffer(Buffer *buffer) {
   // NOTE: Remember to use LINES and COLS variables
 
   clear();
-  move(0, 0);
+  move(0, 0); // NOTE: Need to calculate padding after (y = PADDING)
 
   int x_pos = 0;
   int y_pos = 0;
@@ -304,7 +318,6 @@ void draw_buffer(Buffer *buffer) {
     setcchar(&ch, &file_char, 0, 0, NULL);
 
     mvadd_wch(y_pos, x_pos, &ch);
-
     x_pos++;
 
     if (file_char == L'\n') {
@@ -313,6 +326,8 @@ void draw_buffer(Buffer *buffer) {
     }
   }
 
+  y_cursor_pos = 0;
+  x_cursor_pos = 0;
   move(y_cursor_pos, x_cursor_pos);
   refresh();
 }
