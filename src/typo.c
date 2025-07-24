@@ -12,7 +12,7 @@
 #define GREEN COLOR_PAIR(1)
 #define RED COLOR_PAIR(2)
 
-#define PADDING 8
+#define PADDING 6
 
 typedef struct Buffer {
   int page_number;
@@ -108,10 +108,12 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  /* draw_buffer(pages->buffer); */
+  pages = pages->proximo;
+  pages = pages->anterior;
+  draw_buffer(pages->buffer);
   /* draw_buffer(pages->proximo->buffer); */
   /* draw_buffer(pages->proximo->proximo->buffer); */
-  draw_buffer(pages->proximo->proximo->proximo->buffer);
+  /* draw_buffer(pages->proximo->proximo->proximo->buffer); */
   while (1) {
     handle_input(get_user_input(file, &pages), file, &pages);
   }
@@ -188,7 +190,7 @@ FileInformation get_file_information(FileInformation *file_info, FILE *file) {
     }
   }
 
-  // Se o arquivo está vazio
+  // if the file is empty
   if (number_of_characters == 0) {
     number_of_lines = 0;
   }
@@ -196,7 +198,6 @@ FileInformation get_file_information(FileInformation *file_info, FILE *file) {
   file_info->number_of_characters = number_of_characters;
   file_info->number_of_lines = number_of_lines;
 
-  // Calcular número de buffers baseado nas linhas disponíveis
   int lines_per_buffer = LINES - PADDING;
   if (lines_per_buffer <= 0)
     lines_per_buffer = 1; // at least one line per buffer
@@ -204,7 +205,7 @@ FileInformation get_file_information(FileInformation *file_info, FILE *file) {
   file_info->number_of_buffers =
       (number_of_lines + lines_per_buffer - 1) / lines_per_buffer;
   if (file_info->number_of_buffers == 0) {
-    file_info->number_of_buffers = 1; // pelo menos 1 buffer
+    file_info->number_of_buffers = 1; // needs to have at least one buffer
   }
 
   rewind(file);
@@ -248,7 +249,6 @@ Buffer create_buffer(FILE *file) {
 
   fseek(file, start_pos, SEEK_SET);
 
-  // Ler o conteúdo do buffer
   current_lines = 0;
   int i = 0;
 
@@ -269,10 +269,9 @@ Buffer create_buffer(FILE *file) {
     }
   }
 
-  // CORREÇÃO: Garantir que o buffer termine com \0
+  // ensure each buffer ends with a \0 character
   if (i <= buffer.size) {
     buffer.vect_buff[i] = L'\0';
-    // Atualizar o tamanho real do buffer
     buffer.size = i;
   }
 
@@ -336,7 +335,6 @@ void handle_pages(NodeBuffer **pages, FileInformation *file_info, FILE *file) {
 }
 
 void draw_buffer(Buffer *buffer) {
-  // FIX: sometimes draws an extra "@" at the end
   // TODO: Make 8 lines padding so it looks better (4 at the top and 4 at the
   // bottom)
   // TODO: Draw line numbers
@@ -347,7 +345,7 @@ void draw_buffer(Buffer *buffer) {
   move(0, 0); // NOTE: Need to calculate padding after (y = PADDING)
 
   int x_pos = 0;
-  int y_pos = 0;
+  int y_pos = PADDING / 2;
 
   for (int i = 0; i < buffer->size; i++) {
     wchar_t file_char = buffer->vect_buff[i];
@@ -364,7 +362,7 @@ void draw_buffer(Buffer *buffer) {
     }
   }
 
-  y_cursor_pos = 0;
+  y_cursor_pos = PADDING / 2;
   x_cursor_pos = 0;
   move(y_cursor_pos, x_cursor_pos);
   refresh();
@@ -400,8 +398,8 @@ void handle_del_key(FILE *file, NodeBuffer **pages) {
 }
 
 void handle_bs_key(NodeBuffer **pages) {
-  // FIX: with the new updates to a new data structure, don't delete the last
-  // character of the line if it was typed wrong
+  // FIX: Leave a bunch of garbage when deleting the last character of a line if
+  // the user type the enter key wrong
   // TODO: Draw buffer depending on the key the user is deleting
   if ((*pages)->buffer->current_cu_pointer || (*pages)->buffer->offset) {
     if ((*pages)->buffer->offset) {
@@ -422,7 +420,8 @@ void handle_bs_key(NodeBuffer **pages) {
       int i = (*pages)->buffer->current_cu_pointer;
       int temp_counter = 0;
 
-      do {
+      do { // handles backspacing into the previous last line character without
+           // deleting extra spaces
         i--;
         temp_counter++;
 
