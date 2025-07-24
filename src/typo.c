@@ -48,7 +48,6 @@ Buffer create_buffer(FILE *file);
 NodeBuffer *create_buffer_node(FILE *file);
 void set_pages(NodeBuffer **pages, FILE *file, FileInformation *file_info);
 
-void handle_pages(NodeBuffer **pages, FileInformation *file_info, FILE *file);
 void draw_buffer(Buffer *buffer);
 void display_char(int y, int x, wchar_t character, attr_t attr);
 
@@ -66,7 +65,7 @@ void free_pages(NodeBuffer **pages);
 void exit_game(int exit_status, FILE *file_path, NodeBuffer **pages);
 
 // cursor position global variables
-int y_cursor_pos = 0;
+int y_cursor_pos = PADDING;
 int x_cursor_pos = 0;
 
 int main(int argc, char *argv[]) {
@@ -108,8 +107,8 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  pages = pages->proximo;
-  pages = pages->anterior;
+  /* pages = pages->proximo; */
+  /* pages = pages->anterior; */
   draw_buffer(pages->buffer);
   /* draw_buffer(pages->proximo->buffer); */
   /* draw_buffer(pages->proximo->proximo->buffer); */
@@ -193,6 +192,7 @@ FileInformation get_file_information(FileInformation *file_info, FILE *file) {
   // if the file is empty
   if (number_of_characters == 0) {
     number_of_lines = 0;
+    // TODO: Exit game, there's nothing to do!
   }
 
   file_info->number_of_characters = number_of_characters;
@@ -222,8 +222,9 @@ Buffer create_buffer(FILE *file) {
   buffer.current_cu_pointer = 0;
   buffer.offset = 0;
 
-  // Count how many characters the buffer needs to able to store
   long start_pos = ftell(file);
+
+  // Count how many characters the buffer needs to able to store
   wint_t file_char;
 
   while (current_lines < buffer_capacity &&
@@ -322,16 +323,10 @@ void set_pages(NodeBuffer **pages, FILE *file, FileInformation *file_info) {
     current_number_of_buffers++;
     new_node->buffer->page_number = current_number_of_buffers;
 
-    if (feof(file) == WEOF) {
+    if ((unsigned int)feof(file) == WEOF) {
       break;
     }
   }
-}
-
-void handle_pages(NodeBuffer **pages, FileInformation *file_info, FILE *file) {
-  /*
-    // TODO: Implement
-  */
 }
 
 void draw_buffer(Buffer *buffer) {
@@ -398,23 +393,33 @@ void handle_del_key(FILE *file, NodeBuffer **pages) {
 }
 
 void handle_bs_key(NodeBuffer **pages) {
-  // FIX: Leave a bunch of garbage when deleting the last character of a line if
-  // the user type the enter key wrong
   // TODO: Draw buffer depending on the key the user is deleting
+
+  wchar_t buffer_cu_char =
+      (*pages)->buffer->vect_buff[(*pages)->buffer->current_cu_pointer];
+
   if ((*pages)->buffer->current_cu_pointer || (*pages)->buffer->offset) {
     if ((*pages)->buffer->offset) {
-      (*pages)->buffer->offset--;
 
-      x_cursor_pos--;
-      if (x_cursor_pos < 0)
-        x_cursor_pos = 0;
+      // deletes all extra characters after the end of a line
+      if (buffer_cu_char == L'\n') {
+        display_char(y_cursor_pos, x_cursor_pos, L' ', NO_COLOR);
+        x_cursor_pos--;
+        display_char(y_cursor_pos, x_cursor_pos, L' ', NO_COLOR);
+        (*pages)->buffer->offset--;
+      } else {
+        (*pages)->buffer->offset--;
 
-      display_char(
-          y_cursor_pos, x_cursor_pos,
-          (*pages)->buffer->vect_buff[(*pages)->buffer->current_cu_pointer +
-                                      (*pages)->buffer->offset],
-          NO_COLOR);
+        x_cursor_pos--;
+        if (x_cursor_pos < 0)
+          x_cursor_pos = 0;
 
+        display_char(
+            y_cursor_pos, x_cursor_pos,
+            (*pages)->buffer->vect_buff[(*pages)->buffer->current_cu_pointer +
+                                        (*pages)->buffer->offset],
+            NO_COLOR);
+      }
     } else if (!(*pages)->buffer->offset &&
                (*pages)->buffer->current_cu_pointer) {
       int i = (*pages)->buffer->current_cu_pointer;
@@ -562,6 +567,10 @@ void handle_input(wchar_t user_input, FILE *file, NodeBuffer **pages) {
   } else if (user_input == buffer_cu_char) {
     handle_right_key(user_input, (*pages)->buffer);
   }
+
+  logtf("caractere atual: %lc\n",
+        (*pages)->buffer->vect_buff[(*pages)->buffer->current_cu_pointer]);
+  logtf("offset: %d\n", (*pages)->buffer->offset);
 }
 
 void free_pages(NodeBuffer **pages) {
