@@ -24,8 +24,8 @@ typedef struct Buffer {
 
 typedef struct NodeBuffer {
   struct Buffer *buffer;
-  struct NodeBuffer *proximo;
-  struct NodeBuffer *anterior;
+  struct NodeBuffer *next;
+  struct NodeBuffer *previous;
 } NodeBuffer;
 
 typedef struct FileInformation {
@@ -47,6 +47,8 @@ int file_char_number(FILE *file);
 Buffer create_buffer(FILE *file);
 NodeBuffer *create_buffer_node(FILE *file);
 void set_pages(NodeBuffer **pages, FILE *file, FileInformation *file_info);
+void previous_buffer(NodeBuffer **pages);
+void next_buffer(NodeBuffer **pages);
 
 void draw_buffer(Buffer *buffer);
 void display_char(int y, int x, wchar_t character, attr_t attr);
@@ -58,7 +60,7 @@ void handle_bs_key(NodeBuffer **pages);
 void handle_enter_key(NodeBuffer **pages);
 void handle_space_key(wchar_t user_input, Buffer *buffer);
 void handle_wrong_key(wchar_t user_input, Buffer *buffer);
-void handle_right_key(wchar_t user_input, Buffer *buffer);
+void handle_right_key(wchar_t user_input, NodeBuffer **pages);
 void handle_input(wchar_t user_input, FILE *file, NodeBuffer **pages);
 
 void free_pages(NodeBuffer **pages);
@@ -107,33 +109,10 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  /* pages = pages->proximo; */
-  /* pages = pages->anterior; */
   draw_buffer(pages->buffer);
-  /* draw_buffer(pages->proximo->buffer); */
-  /* draw_buffer(pages->proximo->proximo->buffer); */
-  /* draw_buffer(pages->proximo->proximo->proximo->buffer); */
   while (1) {
     handle_input(get_user_input(file, &pages), file, &pages);
   }
-
-  // TEST:
-  // NOTE: Delete this later
-  /* while (getch() != 'q') { */
-  /*   printw("Número de letras no arquivo: %d\n",
-   * file_info.number_of_characters); */
-  /*   printw("Número de linhas no arquivo: %d\n", file_info.number_of_lines);
-   */
-  /*   printw("Número de buffers: %d\n", file_info.number_of_buffers); */
-  /*   printw("Número de linhas disponívels no terminal: %d\n", LINES); */
-  /*   printw("Posição atual do cursor do buffer: %d\n",
-   * pages->buffer->current_cu_pointer); */
-  /*   printw("Número do buffer atual: %d\n", pages->buffer->page_number); */
-  /*   printw("Primeira letra do primeiro buffer: %lc\n",
-   * pages->buffer->vect_buff[2]); */
-  /* } */
-  /**/
-  /* endwin(); */
 
   close_file(file);
 
@@ -296,8 +275,8 @@ NodeBuffer *create_buffer_node(FILE *file) {
 
   *new_buffer = create_buffer(file);
   new_node->buffer = new_buffer;
-  new_node->proximo = NULL;
-  new_node->anterior = NULL;
+  new_node->next = NULL;
+  new_node->previous = NULL;
 
   return new_node;
 }
@@ -313,11 +292,11 @@ void set_pages(NodeBuffer **pages, FILE *file, FileInformation *file_info) {
       *pages = new_node;
     } else {
       NodeBuffer *temp = *pages;
-      while (temp->proximo != NULL) {
-        temp = temp->proximo;
+      while (temp->next != NULL) {
+        temp = temp->next;
       }
-      temp->proximo = new_node;
-      new_node->anterior = temp;
+      temp->next = new_node;
+      new_node->previous = temp;
     }
 
     current_number_of_buffers++;
@@ -329,15 +308,25 @@ void set_pages(NodeBuffer **pages, FILE *file, FileInformation *file_info) {
   }
 }
 
+void previous_buffer(NodeBuffer **pages) {
+  if ((*pages)->previous != NULL)
+    *pages = (*pages)->previous;
+
+  return;
+}
+
+void next_buffer(NodeBuffer **pages) {
+  if ((*pages)->next != NULL)
+    *pages = (*pages)->next;
+
+  return;
+}
+
 void draw_buffer(Buffer *buffer) {
-  // TODO: Make 8 lines padding so it looks better (4 at the top and 4 at the
-  // bottom)
   // TODO: Draw line numbers
-  // TODO: Implement pagination
-  // NOTE: Remember to use LINES and COLS variables
 
   clear();
-  move(0, 0); // NOTE: Need to calculate padding after (y = PADDING)
+  move(PADDING, 0);
 
   int x_pos = 0;
   int y_pos = PADDING / 2;
@@ -393,22 +382,19 @@ void handle_del_key(FILE *file, NodeBuffer **pages) {
 }
 
 void handle_bs_key(NodeBuffer **pages) {
-  // TODO: Draw buffer depending on the key the user is deleting
-
   wchar_t buffer_cu_char =
       (*pages)->buffer->vect_buff[(*pages)->buffer->current_cu_pointer];
 
   if ((*pages)->buffer->current_cu_pointer || (*pages)->buffer->offset) {
     if ((*pages)->buffer->offset) {
+      (*pages)->buffer->offset--;
 
       // deletes all extra characters after the end of a line
       if (buffer_cu_char == L'\n') {
         display_char(y_cursor_pos, x_cursor_pos, L' ', NO_COLOR);
         x_cursor_pos--;
         display_char(y_cursor_pos, x_cursor_pos, L' ', NO_COLOR);
-        (*pages)->buffer->offset--;
       } else {
-        (*pages)->buffer->offset--;
 
         x_cursor_pos--;
         if (x_cursor_pos < 0)
@@ -459,12 +445,16 @@ void handle_bs_key(NodeBuffer **pages) {
                                       (*pages)->buffer->offset],
           NO_COLOR);
     }
+  } else if (!(*pages)->buffer->current_cu_pointer &&
+             !((*pages)->buffer->offset)) { // fist character in the buffer
+    previous_buffer(pages);
+
+    draw_buffer((*pages)->buffer);
+    // TODO: go back to the last character and valid position in the buffer
   }
 }
 
 void handle_enter_key(NodeBuffer **pages) {
-  // TODO: Needs to point to the next pages->buffer if the user gets to the end
-  // of the buffer
   wchar_t buffer_cu_char =
       (*pages)->buffer->vect_buff[(*pages)->buffer->current_cu_pointer];
 
@@ -539,15 +529,22 @@ void handle_wrong_key(wchar_t user_input, Buffer *buffer) {
   }
 }
 
-void handle_right_key(wchar_t user_input, Buffer *buffer) {
-  if (buffer->offset)
+void handle_right_key(wchar_t user_input, NodeBuffer **pages) {
+  // prevent for displaying green characters after red ones
+  if ((*pages)->buffer->offset)
     display_char(y_cursor_pos, x_cursor_pos, user_input, RED);
   else
     display_char(y_cursor_pos, x_cursor_pos, user_input, GREEN);
 
-  buffer->current_cu_pointer++;
+  (*pages)->buffer->current_cu_pointer++;
   x_cursor_pos++;
   move(y_cursor_pos, x_cursor_pos);
+  if ((*pages)->buffer->current_cu_pointer >= (*pages)->buffer->size - 1) {
+    next_buffer(pages);
+    draw_buffer((*pages)->buffer);
+
+    move(PADDING / 2, 0);
+  }
 }
 
 void handle_input(wchar_t user_input, FILE *file, NodeBuffer **pages) {
@@ -565,19 +562,22 @@ void handle_input(wchar_t user_input, FILE *file, NodeBuffer **pages) {
   } else if (user_input != buffer_cu_char) {
     handle_wrong_key(user_input, (*pages)->buffer);
   } else if (user_input == buffer_cu_char) {
-    handle_right_key(user_input, (*pages)->buffer);
+    handle_right_key(user_input, pages);
   }
 
   logtf("caractere atual: %lc\n",
         (*pages)->buffer->vect_buff[(*pages)->buffer->current_cu_pointer]);
   logtf("offset: %d\n", (*pages)->buffer->offset);
+  logtf("número atual do cursor no buffer: %d\n",
+        (*pages)->buffer->current_cu_pointer);
+  logtf("tamanho do buffer atual: %d\n", (*pages)->buffer->size);
 }
 
 void free_pages(NodeBuffer **pages) {
   NodeBuffer *current = *pages;
 
   while (current != NULL) {
-    NodeBuffer *next = current->proximo;
+    NodeBuffer *next = current->next;
     free(current->buffer->vect_buff);
     free(current->buffer);
     free(current);
