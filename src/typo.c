@@ -324,6 +324,7 @@ void next_buffer(NodeBuffer **pages) {
 
 void draw_buffer(Buffer *buffer) {
   // TODO: Draw line numbers
+  // TODO: pass colors as argument (to draw previous buffer green)
 
   clear();
   move(PADDING, 0);
@@ -449,8 +450,26 @@ void handle_bs_key(NodeBuffer **pages) {
              !((*pages)->buffer->offset)) { // fist character in the buffer
     previous_buffer(pages);
 
+    (*pages)->buffer->current_cu_pointer = (*pages)->buffer->size - 2;
+    (*pages)->buffer->offset = 0;
+
     draw_buffer((*pages)->buffer);
-    // TODO: go back to the last character and valid position in the buffer
+
+    y_cursor_pos = PADDING / 2;
+    x_cursor_pos = 0;
+
+    // find the last cursor position in terms of x
+    for (int i = 0; i < (*pages)->buffer->size; i++) {
+      if ((*pages)->buffer->vect_buff[i] == L'\n') {
+        y_cursor_pos++;
+        x_cursor_pos = 0;
+      } else {
+        x_cursor_pos++;
+      }
+    }
+
+    // position the cursor at the end of the previous buffer
+    move(y_cursor_pos, x_cursor_pos);
   }
 }
 
@@ -539,7 +558,7 @@ void handle_right_key(wchar_t user_input, NodeBuffer **pages) {
   (*pages)->buffer->current_cu_pointer++;
   x_cursor_pos++;
   move(y_cursor_pos, x_cursor_pos);
-  if ((*pages)->buffer->current_cu_pointer >= (*pages)->buffer->size - 1) {
+  if ((*pages)->buffer->current_cu_pointer == (*pages)->buffer->size - 1) {
     next_buffer(pages);
     draw_buffer((*pages)->buffer);
 
@@ -571,6 +590,8 @@ void handle_input(wchar_t user_input, FILE *file, NodeBuffer **pages) {
   logtf("número atual do cursor no buffer: %d\n",
         (*pages)->buffer->current_cu_pointer);
   logtf("tamanho do buffer atual: %d\n", (*pages)->buffer->size);
+  logtf("posição atual do cursor x: %d\n", x_cursor_pos);
+  logtf("posição atual do cursor y: %d\n", y_cursor_pos);
 }
 
 void free_pages(NodeBuffer **pages) {
