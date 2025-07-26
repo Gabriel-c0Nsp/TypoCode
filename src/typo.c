@@ -50,7 +50,7 @@ void set_pages(NodeBuffer **pages, FILE *file, FileInformation *file_info);
 void previous_buffer(NodeBuffer **pages);
 void next_buffer(NodeBuffer **pages);
 
-void draw_buffer(Buffer *buffer);
+void draw_buffer(Buffer *buffer, attr_t attr);
 void display_char(int y, int x, wchar_t character, attr_t attr);
 
 // user input related operations
@@ -60,7 +60,7 @@ void handle_bs_key(NodeBuffer **pages);
 void handle_enter_key(NodeBuffer **pages);
 void handle_space_key(wchar_t user_input, Buffer *buffer);
 void handle_wrong_key(wchar_t user_input, Buffer *buffer);
-void handle_right_key(wchar_t user_input, NodeBuffer **pages);
+void handle_right_key(wchar_t user_input, Buffer *buffer);
 void handle_input(wchar_t user_input, FILE *file, NodeBuffer **pages);
 
 void free_pages(NodeBuffer **pages);
@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  draw_buffer(pages->buffer);
+  draw_buffer(pages->buffer, NO_COLOR);
   while (1) {
     handle_input(get_user_input(file, &pages), file, &pages);
   }
@@ -322,7 +322,7 @@ void next_buffer(NodeBuffer **pages) {
   return;
 }
 
-void draw_buffer(Buffer *buffer) {
+void draw_buffer(Buffer *buffer, attr_t attr) {
   // TODO: Draw line numbers
   // TODO: pass colors as argument (to draw previous buffer green)
 
@@ -332,6 +332,7 @@ void draw_buffer(Buffer *buffer) {
   int x_pos = 0;
   int y_pos = PADDING / 2;
 
+  attron(attr);
   for (int i = 0; i < buffer->size; i++) {
     wchar_t file_char = buffer->vect_buff[i];
 
@@ -346,6 +347,8 @@ void draw_buffer(Buffer *buffer) {
       x_pos = 0;
     }
   }
+
+  attroff(attr);
 
   y_cursor_pos = PADDING / 2;
   x_cursor_pos = 0;
@@ -450,10 +453,10 @@ void handle_bs_key(NodeBuffer **pages) {
              !((*pages)->buffer->offset)) { // fist character in the buffer
     previous_buffer(pages);
 
-    (*pages)->buffer->current_cu_pointer = (*pages)->buffer->size - 2;
+    (*pages)->buffer->current_cu_pointer = (*pages)->buffer->size;
     (*pages)->buffer->offset = 0;
 
-    draw_buffer((*pages)->buffer);
+    draw_buffer((*pages)->buffer, GREEN);
 
     y_cursor_pos = PADDING / 2;
     x_cursor_pos = 0;
@@ -477,7 +480,30 @@ void handle_enter_key(NodeBuffer **pages) {
   wchar_t buffer_cu_char =
       (*pages)->buffer->vect_buff[(*pages)->buffer->current_cu_pointer];
 
-  if (buffer_cu_char == L'\n' && !(*pages)->buffer->offset) {
+  // check if reached the end of the buffer
+  if ((*pages)->buffer->vect_buff[(*pages)->buffer->current_cu_pointer + 1] ==
+      L'\0') {
+    next_buffer(pages);
+    draw_buffer((*pages)->buffer, NO_COLOR);
+
+    y_cursor_pos = PADDING / 2;
+    x_cursor_pos = 0;
+
+    do {
+      if ((*pages)->buffer->vect_buff[(*pages)->buffer->current_cu_pointer] ==
+          L' ')
+        (*pages)->buffer->current_cu_pointer++;
+      x_cursor_pos++;
+    } while (
+        (*pages)->buffer->vect_buff[(*pages)->buffer->current_cu_pointer] ==
+        L' ');
+
+    move(y_cursor_pos, x_cursor_pos);
+
+    return;
+  }
+
+  if (buffer_cu_char == L'\n' && !(*pages)->buffer->offset) { // end of the line
     y_cursor_pos++;
     x_cursor_pos = 0;
 
@@ -490,7 +516,8 @@ void handle_enter_key(NodeBuffer **pages) {
     } while (buffer_cu_char == L' ');
 
     move(y_cursor_pos, x_cursor_pos);
-  } else if (buffer_cu_char != L'\n') {
+  } else if (buffer_cu_char !=
+             L'\n') { // wrong character at the middle of the line
     display_char(y_cursor_pos, x_cursor_pos, '_', RED);
     (*pages)->buffer->offset++;
     x_cursor_pos++;
@@ -548,22 +575,16 @@ void handle_wrong_key(wchar_t user_input, Buffer *buffer) {
   }
 }
 
-void handle_right_key(wchar_t user_input, NodeBuffer **pages) {
+void handle_right_key(wchar_t user_input, Buffer *buffer) {
   // prevent for displaying green characters after red ones
-  if ((*pages)->buffer->offset)
+  if (buffer->offset)
     display_char(y_cursor_pos, x_cursor_pos, user_input, RED);
   else
     display_char(y_cursor_pos, x_cursor_pos, user_input, GREEN);
 
-  (*pages)->buffer->current_cu_pointer++;
+  buffer->current_cu_pointer++;
   x_cursor_pos++;
   move(y_cursor_pos, x_cursor_pos);
-  if ((*pages)->buffer->current_cu_pointer == (*pages)->buffer->size - 1) {
-    next_buffer(pages);
-    draw_buffer((*pages)->buffer);
-
-    move(PADDING / 2, 0);
-  }
 }
 
 void handle_input(wchar_t user_input, FILE *file, NodeBuffer **pages) {
@@ -581,7 +602,7 @@ void handle_input(wchar_t user_input, FILE *file, NodeBuffer **pages) {
   } else if (user_input != buffer_cu_char) {
     handle_wrong_key(user_input, (*pages)->buffer);
   } else if (user_input == buffer_cu_char) {
-    handle_right_key(user_input, pages);
+    handle_right_key(user_input, (*pages)->buffer);
   }
 
   logtf("caractere atual: %lc\n",
