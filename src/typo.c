@@ -386,6 +386,7 @@ void handle_del_key(FILE *file, NodeBuffer **pages) {
 }
 
 void handle_bs_key(NodeBuffer **pages) {
+  // TODO: ignore tabs feature when returning a buffer as well
   wchar_t buffer_cu_char =
       (*pages)->buffer->vect_buff[(*pages)->buffer->current_cu_pointer];
 
@@ -463,13 +464,16 @@ void handle_bs_key(NodeBuffer **pages) {
 
     // find the last cursor position in terms of x
     for (int i = 0; i < (*pages)->buffer->size; i++) {
-      if ((*pages)->buffer->vect_buff[i] == L'\n') {
+      if ((*pages)->buffer->vect_buff[i] == L'\n' && (*pages)->buffer->vect_buff[i + 1] != L'\0') {
         y_cursor_pos++;
         x_cursor_pos = 0;
       } else {
         x_cursor_pos++;
       }
     }
+
+    x_cursor_pos--;
+    (*pages)->buffer->current_cu_pointer--;
 
     // position the cursor at the end of the previous buffer
     move(y_cursor_pos, x_cursor_pos);
