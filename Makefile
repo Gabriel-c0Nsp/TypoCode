@@ -19,5 +19,9 @@ file3: src/typo.c
 	@$(CC) src/typo.c $(CFLAGS) src/typo
 	@src/typo ~/repos/Lua-Generate/lg/modules/config/config.lua
 
+file4: src/typo.c
+	@$(CC) src/typo.c $(CFLAGS) src/typo
+	@src/typo src/teste_4.lua
+
 clean:
 	rm -f src/typo
