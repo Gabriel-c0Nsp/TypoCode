@@ -309,8 +309,12 @@ void set_pages(NodeBuffer **pages, FILE *file, FileInformation *file_info) {
 }
 
 void previous_buffer(NodeBuffer **pages) {
-  if ((*pages)->previous != NULL)
+  if ((*pages)->previous != NULL) {
+    (*pages)->buffer->current_cu_pointer = 0;
+    (*pages)->buffer->offset = 0;
+    x_cursor_pos = 0;
     *pages = (*pages)->previous;
+  }
 
   return;
 }
@@ -387,9 +391,49 @@ void handle_del_key(FILE *file, NodeBuffer **pages) {
 
 // clean up this function later
 void handle_bs_key(NodeBuffer **pages) {
-  // TODO: ignore tabs feature when returning a buffer as well
   wchar_t buffer_cu_char =
       (*pages)->buffer->vect_buff[(*pages)->buffer->current_cu_pointer];
+
+  // ignore tabs when deleting the first characters
+  if ((*pages)->buffer->page_number > 1 && y_cursor_pos == PADDING / 2) {
+    int i = (*pages)->buffer->current_cu_pointer - 1;
+    if (i < 0) i = 0;
+
+    while ((i && (*pages)->buffer->vect_buff[i] == L' ') ||
+           (i && (*pages)->buffer->vect_buff[i] == L'\n'))
+      i--;
+
+    if (!i) {
+      previous_buffer(pages);
+
+      (*pages)->buffer->current_cu_pointer = (*pages)->buffer->size;
+      (*pages)->buffer->offset = 0;
+
+      draw_buffer((*pages)->buffer, GREEN);
+
+      y_cursor_pos = PADDING / 2;
+      x_cursor_pos = 0;
+
+      // find the last cursor position in terms of x
+      for (int i = 0; i < (*pages)->buffer->size; i++) {
+        if ((*pages)->buffer->vect_buff[i] == L'\n' &&
+            (*pages)->buffer->vect_buff[i + 1] != L'\0') {
+          y_cursor_pos++;
+          x_cursor_pos = 0;
+        } else {
+          x_cursor_pos++;
+        }
+      }
+
+      x_cursor_pos--;
+      (*pages)->buffer->current_cu_pointer--;
+
+      // position the cursor at the end of the previous buffer
+      move(y_cursor_pos, x_cursor_pos);
+
+      return;
+    }
+  }
 
   if ((*pages)->buffer->current_cu_pointer || (*pages)->buffer->offset) {
     if ((*pages)->buffer->offset) {
@@ -451,35 +495,6 @@ void handle_bs_key(NodeBuffer **pages) {
                                       (*pages)->buffer->offset],
           NO_COLOR);
     }
-  } else if ((*pages)->buffer->page_number > 1 &&
-             !(*pages)->buffer->current_cu_pointer &&
-             !((*pages)->buffer->offset)) { // fist character in the buffer
-    previous_buffer(pages);
-
-    (*pages)->buffer->current_cu_pointer = (*pages)->buffer->size;
-    (*pages)->buffer->offset = 0;
-
-    draw_buffer((*pages)->buffer, GREEN);
-
-    y_cursor_pos = PADDING / 2;
-    x_cursor_pos = 0;
-
-    // find the last cursor position in terms of x
-    for (int i = 0; i < (*pages)->buffer->size; i++) {
-      if ((*pages)->buffer->vect_buff[i] == L'\n' &&
-          (*pages)->buffer->vect_buff[i + 1] != L'\0') {
-        y_cursor_pos++;
-        x_cursor_pos = 0;
-      } else {
-        x_cursor_pos++;
-      }
-    }
-
-    x_cursor_pos--;
-    (*pages)->buffer->current_cu_pointer--;
-
-    // position the cursor at the end of the previous buffer
-    move(y_cursor_pos, x_cursor_pos);
   }
 }
 
@@ -615,6 +630,7 @@ void handle_input(wchar_t user_input, FILE *file, NodeBuffer **pages) {
   logtf("=========================================================\n");
   logtf("caractere atual: %lc\n",
         (*pages)->buffer->vect_buff[(*pages)->buffer->current_cu_pointer]);
+  logtf("usuário digitou: %lc\n", user_input);
   logtf("offset: %d\n", (*pages)->buffer->offset);
   logtf("número atual do cursor no buffer: %d\n",
         (*pages)->buffer->current_cu_pointer);
