@@ -385,6 +385,7 @@ void handle_del_key(FILE *file, NodeBuffer **pages) {
   exit_game(0, file, pages);
 }
 
+// clean up this function later
 void handle_bs_key(NodeBuffer **pages) {
   // TODO: ignore tabs feature when returning a buffer as well
   wchar_t buffer_cu_char =
@@ -450,7 +451,8 @@ void handle_bs_key(NodeBuffer **pages) {
                                       (*pages)->buffer->offset],
           NO_COLOR);
     }
-  } else if (!(*pages)->buffer->current_cu_pointer &&
+  } else if ((*pages)->buffer->page_number > 1 &&
+             !(*pages)->buffer->current_cu_pointer &&
              !((*pages)->buffer->offset)) { // fist character in the buffer
     previous_buffer(pages);
 
@@ -464,7 +466,8 @@ void handle_bs_key(NodeBuffer **pages) {
 
     // find the last cursor position in terms of x
     for (int i = 0; i < (*pages)->buffer->size; i++) {
-      if ((*pages)->buffer->vect_buff[i] == L'\n' && (*pages)->buffer->vect_buff[i + 1] != L'\0') {
+      if ((*pages)->buffer->vect_buff[i] == L'\n' &&
+          (*pages)->buffer->vect_buff[i + 1] != L'\0') {
         y_cursor_pos++;
         x_cursor_pos = 0;
       } else {
@@ -609,6 +612,7 @@ void handle_input(wchar_t user_input, FILE *file, NodeBuffer **pages) {
     handle_right_key(user_input, (*pages)->buffer);
   }
 
+  logtf("=========================================================\n");
   logtf("caractere atual: %lc\n",
         (*pages)->buffer->vect_buff[(*pages)->buffer->current_cu_pointer]);
   logtf("offset: %d\n", (*pages)->buffer->offset);
@@ -617,6 +621,7 @@ void handle_input(wchar_t user_input, FILE *file, NodeBuffer **pages) {
   logtf("tamanho do buffer atual: %d\n", (*pages)->buffer->size);
   logtf("posição atual do cursor x: %d\n", x_cursor_pos);
   logtf("posição atual do cursor y: %d\n", y_cursor_pos);
+  logtf("número da página atual: %d\n", (*pages)->buffer->page_number);
 }
 
 void free_pages(NodeBuffer **pages) {
