@@ -50,6 +50,7 @@ void set_pages(NodeBuffer **pages, FILE *file, FileInformation *file_info);
 void previous_buffer(NodeBuffer **pages);
 void next_buffer(NodeBuffer **pages);
 
+// drawing functions
 void draw_buffer(Buffer *buffer, attr_t attr);
 void display_char(int y, int x, wchar_t character, attr_t attr);
 
@@ -63,6 +64,7 @@ void handle_wrong_key(wchar_t user_input, Buffer *buffer);
 void handle_right_key(wchar_t user_input, Buffer *buffer);
 void handle_input(wchar_t user_input, FILE *file, NodeBuffer **pages);
 
+// close game functions
 void free_pages(NodeBuffer **pages);
 void exit_game(int exit_status, FILE *file_path, NodeBuffer **pages);
 
@@ -328,7 +330,6 @@ void next_buffer(NodeBuffer **pages) {
 
 void draw_buffer(Buffer *buffer, attr_t attr) {
   // TODO: Draw line numbers
-  // TODO: pass colors as argument (to draw previous buffer green)
 
   clear();
   move(PADDING, 0);
@@ -626,18 +627,6 @@ void handle_input(wchar_t user_input, FILE *file, NodeBuffer **pages) {
   } else if (user_input == buffer_cu_char) {
     handle_right_key(user_input, (*pages)->buffer);
   }
-
-  logtf("=========================================================\n");
-  logtf("caractere atual: %lc\n",
-        (*pages)->buffer->vect_buff[(*pages)->buffer->current_cu_pointer]);
-  logtf("usuário digitou: %lc\n", user_input);
-  logtf("offset: %d\n", (*pages)->buffer->offset);
-  logtf("número atual do cursor no buffer: %d\n",
-        (*pages)->buffer->current_cu_pointer);
-  logtf("tamanho do buffer atual: %d\n", (*pages)->buffer->size);
-  logtf("posição atual do cursor x: %d\n", x_cursor_pos);
-  logtf("posição atual do cursor y: %d\n", y_cursor_pos);
-  logtf("número da página atual: %d\n", (*pages)->buffer->page_number);
 }
 
 void free_pages(NodeBuffer **pages) {
