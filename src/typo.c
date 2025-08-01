@@ -52,6 +52,9 @@ void previous_buffer(NodeBuffer **pages);
 void next_buffer(NodeBuffer **pages);
 
 // drawing functions
+void draw_file_name();
+void draw_number_lines();
+void draw_page_number();
 void draw_buffer(Buffer *buffer, attr_t attr);
 void display_char(int y, int x, wchar_t character, attr_t attr);
 
@@ -329,6 +332,42 @@ void next_buffer(NodeBuffer **pages) {
   return;
 }
 
+void draw_file_name() {
+  for (int i = 0; i <= COLS; i++) {
+    if (i == X_PADDING - 2)
+      display_char(0, i, L'┬', NO_COLOR);
+    else
+      display_char(0, i, L'─', NO_COLOR);
+
+    if (i == X_PADDING - 2)
+      display_char(2, i, L'┼', NO_COLOR);
+    else
+      display_char(2, i, L'─', NO_COLOR);
+  }
+}
+
+void draw_number_lines() {
+  for (int i = 1; i <= LINES; i++) {
+    if (i == 2 || i == LINES - 1 || i == LINES - 3)
+      continue;
+    display_char(i, X_PADDING - 2, L'│', NO_COLOR);
+  }
+}
+
+void draw_page_number() {
+  for (int i = 0; i <= COLS; i++) {
+    if (i == X_PADDING - 2)
+      display_char(LINES - 3, i, L'┼', NO_COLOR);
+    else
+      display_char(LINES - 3, i, L'─', NO_COLOR);
+
+    if (i == X_PADDING - 2)
+      display_char(LINES - 1, i, L'┴', NO_COLOR);
+    else
+      display_char(LINES - 1, i, L'─', NO_COLOR);
+  }
+}
+
 void draw_buffer(Buffer *buffer, attr_t attr) {
   // TODO: Draw line numbers
 
@@ -356,22 +395,9 @@ void draw_buffer(Buffer *buffer, attr_t attr) {
 
   attroff(attr);
 
-  // TODO: Extract this to a function
-  for (int i = 0; i <= COLS; i++) {
-    display_char(0, i, '-', NO_COLOR);
-  }
-
-  for (int i = 0; i <= COLS; i++) {
-    display_char(2, i, '-', NO_COLOR);
-  }
-
-  for (int i = 0; i <= COLS; i++) {
-    display_char(LINES - 1, i, '-', NO_COLOR);
-  }
-
-  for (int i = 0; i <= COLS; i++) {
-    display_char(LINES - 3, i, '-', NO_COLOR);
-  }
+  draw_file_name();
+  draw_number_lines();
+  draw_page_number();
 
   y_cursor_pos = Y_PADDING / 2;
   x_cursor_pos = X_PADDING;
