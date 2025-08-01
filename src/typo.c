@@ -355,6 +355,23 @@ void draw_buffer(Buffer *buffer, attr_t attr) {
 
   attroff(attr);
 
+  // TODO: Extract this to a function
+  for (int i = 0; i <= COLS; i++) {
+    display_char(0, i, '-', NO_COLOR);
+  }
+
+  for (int i = 0; i <= COLS; i++) {
+    display_char(2, i, '-', NO_COLOR);
+  }
+
+  for (int i = 0; i <= COLS; i++) {
+    display_char(LINES - 1, i, '-', NO_COLOR);
+  }
+
+  for (int i = 0; i <= COLS; i++) {
+    display_char(LINES - 3, i, '-', NO_COLOR);
+  }
+
   y_cursor_pos = PADDING / 2;
   x_cursor_pos = 0;
   move(y_cursor_pos, x_cursor_pos);
@@ -398,7 +415,8 @@ void handle_bs_key(NodeBuffer **pages) {
   // ignore tabs when deleting the first characters
   if ((*pages)->buffer->page_number > 1 && y_cursor_pos == PADDING / 2) {
     int i = (*pages)->buffer->current_cu_pointer - 1;
-    if (i < 0) i = 0;
+    if (i < 0)
+      i = 0;
 
     while ((i && (*pages)->buffer->vect_buff[i] == L' ') ||
            (i && (*pages)->buffer->vect_buff[i] == L'\n'))
