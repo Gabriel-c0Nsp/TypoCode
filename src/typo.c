@@ -5,6 +5,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <wchar.h>
 
@@ -30,6 +31,7 @@ typedef struct NodeBuffer {
 } NodeBuffer;
 
 typedef struct FileInformation {
+  char *file_name;
   int number_of_characters;
   int number_of_lines;
   int number_of_buffers;
@@ -42,12 +44,16 @@ void logtf(const char *fmt, ...);
 FILE *open_file(char *argv);
 void close_file(FILE *file);
 
+// helper functions
+char *extract_file_name(char *file_path);
+
 // buffer related operations
-FileInformation get_file_information(FileInformation *file_info, FILE *file);
+FileInformation get_file_information(FileInformation *file_info, FILE *file,
+                                     char *file_name);
 int file_char_number(FILE *file);
 Buffer create_buffer(FILE *file);
 NodeBuffer *create_buffer_node(FILE *file);
-void set_pages(NodeBuffer **pages, FILE *file, FileInformation *file_info);
+void set_pages(NodeBuffer **pages, FILE *file);
 void previous_buffer(NodeBuffer **pages);
 void next_buffer(NodeBuffer **pages);
 
@@ -76,6 +82,8 @@ void exit_game(int exit_status, FILE *file_path, NodeBuffer **pages);
 int y_cursor_pos = Y_PADDING;
 int x_cursor_pos = X_PADDING;
 
+FileInformation file_info;
+
 int main(int argc, char *argv[]) {
   setlocale(LC_ALL, ""); // important so the widechar ncurses can work
 
@@ -83,6 +91,9 @@ int main(int argc, char *argv[]) {
     printf("You should specify a file!\n");
     exit(1);
   }
+
+  char *file_name = argv[1];
+  file_name = extract_file_name(file_name);
 
   FILE *file = open_file(argv[1]);
 
@@ -102,11 +113,9 @@ int main(int argc, char *argv[]) {
   cbreak();
   noecho();
 
-  FileInformation file_info;
-
-  file_info = get_file_information(&file_info, file);
+  file_info = get_file_information(&file_info, file, file_name);
   NodeBuffer *pages = NULL;
-  set_pages(&pages, file, &file_info);
+  set_pages(&pages, file);
 
   if (pages == NULL) {
     fprintf(stderr, "Something went wrong while allocating memory for "
@@ -157,7 +166,19 @@ FILE *open_file(char *argv) {
 
 void close_file(FILE *file) { fclose(file); }
 
-FileInformation get_file_information(FileInformation *file_info, FILE *file) {
+char *extract_file_name(char *file_path) {
+  char *file_name = strrchr(file_path, '/');
+
+  if (file_name != NULL)
+    file_name++;
+  else
+    file_name = file_path;
+
+  return file_name;
+}
+
+FileInformation get_file_information(FileInformation *file_info, FILE *file,
+                                     char *file_name) {
   int number_of_characters = 0;
   wint_t file_char;
   int number_of_lines = 1;
@@ -182,6 +203,7 @@ FileInformation get_file_information(FileInformation *file_info, FILE *file) {
 
   file_info->number_of_characters = number_of_characters;
   file_info->number_of_lines = number_of_lines;
+  file_info->file_name = file_name;
 
   int lines_per_buffer = LINES - Y_PADDING;
   if (lines_per_buffer <= 0)
@@ -287,10 +309,10 @@ NodeBuffer *create_buffer_node(FILE *file) {
   return new_node;
 }
 
-void set_pages(NodeBuffer **pages, FILE *file, FileInformation *file_info) {
+void set_pages(NodeBuffer **pages, FILE *file) {
   int current_number_of_buffers = 0;
 
-  while (current_number_of_buffers < file_info->number_of_buffers) {
+  while (current_number_of_buffers < file_info.number_of_buffers) {
     NodeBuffer *new_node = create_buffer_node(file);
 
     // add a node at the end of the doubly linked list
@@ -344,6 +366,9 @@ void draw_file_name() {
     else
       display_char(2, i, L'─', NO_COLOR);
   }
+
+  mvaddstr(1, X_PADDING, "File: ");
+  mvaddstr(1, X_PADDING + 6, file_info.file_name);
 }
 
 void draw_number_lines() {
