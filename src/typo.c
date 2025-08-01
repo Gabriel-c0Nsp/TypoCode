@@ -12,7 +12,8 @@
 #define GREEN COLOR_PAIR(1)
 #define RED COLOR_PAIR(2)
 
-#define PADDING 6
+#define Y_PADDING 6
+#define X_PADDING 10
 
 typedef struct Buffer {
   int page_number;
@@ -69,8 +70,8 @@ void free_pages(NodeBuffer **pages);
 void exit_game(int exit_status, FILE *file_path, NodeBuffer **pages);
 
 // cursor position global variables
-int y_cursor_pos = PADDING;
-int x_cursor_pos = 0;
+int y_cursor_pos = Y_PADDING;
+int x_cursor_pos = X_PADDING;
 
 int main(int argc, char *argv[]) {
   setlocale(LC_ALL, ""); // important so the widechar ncurses can work
@@ -179,7 +180,7 @@ FileInformation get_file_information(FileInformation *file_info, FILE *file) {
   file_info->number_of_characters = number_of_characters;
   file_info->number_of_lines = number_of_lines;
 
-  int lines_per_buffer = LINES - PADDING;
+  int lines_per_buffer = LINES - Y_PADDING;
   if (lines_per_buffer <= 0)
     lines_per_buffer = 1; // at least one line per buffer
 
@@ -194,7 +195,7 @@ FileInformation get_file_information(FileInformation *file_info, FILE *file) {
 }
 
 Buffer create_buffer(FILE *file) {
-  int buffer_capacity = LINES - PADDING;
+  int buffer_capacity = LINES - Y_PADDING;
   int current_lines = 0;
   int char_count = 0;
 
@@ -314,7 +315,7 @@ void previous_buffer(NodeBuffer **pages) {
   if ((*pages)->previous != NULL) {
     (*pages)->buffer->current_cu_pointer = 0;
     (*pages)->buffer->offset = 0;
-    x_cursor_pos = 0;
+    x_cursor_pos = X_PADDING;
     *pages = (*pages)->previous;
   }
 
@@ -332,10 +333,10 @@ void draw_buffer(Buffer *buffer, attr_t attr) {
   // TODO: Draw line numbers
 
   clear();
-  move(PADDING, 0);
+  move(Y_PADDING, X_PADDING);
 
-  int x_pos = 0;
-  int y_pos = PADDING / 2;
+  int x_pos = X_PADDING;
+  int y_pos = Y_PADDING / 2;
 
   attron(attr);
   for (int i = 0; i < buffer->size; i++) {
@@ -349,7 +350,7 @@ void draw_buffer(Buffer *buffer, attr_t attr) {
 
     if (file_char == L'\n') {
       y_pos++;
-      x_pos = 0;
+      x_pos = X_PADDING;
     }
   }
 
@@ -372,8 +373,8 @@ void draw_buffer(Buffer *buffer, attr_t attr) {
     display_char(LINES - 3, i, '-', NO_COLOR);
   }
 
-  y_cursor_pos = PADDING / 2;
-  x_cursor_pos = 0;
+  y_cursor_pos = Y_PADDING / 2;
+  x_cursor_pos = X_PADDING;
   move(y_cursor_pos, x_cursor_pos);
   refresh();
 }
@@ -413,7 +414,7 @@ void handle_bs_key(NodeBuffer **pages) {
       (*pages)->buffer->vect_buff[(*pages)->buffer->current_cu_pointer];
 
   // ignore tabs when deleting the first characters
-  if ((*pages)->buffer->page_number > 1 && y_cursor_pos == PADDING / 2) {
+  if ((*pages)->buffer->page_number > 1 && y_cursor_pos == Y_PADDING / 2) {
     int i = (*pages)->buffer->current_cu_pointer - 1;
     if (i < 0)
       i = 0;
@@ -430,15 +431,15 @@ void handle_bs_key(NodeBuffer **pages) {
 
       draw_buffer((*pages)->buffer, GREEN);
 
-      y_cursor_pos = PADDING / 2;
-      x_cursor_pos = 0;
+      y_cursor_pos = Y_PADDING / 2;
+      x_cursor_pos = X_PADDING;
 
       // find the last cursor position in terms of x
       for (int i = 0; i < (*pages)->buffer->size; i++) {
         if ((*pages)->buffer->vect_buff[i] == L'\n' &&
             (*pages)->buffer->vect_buff[i + 1] != L'\0') {
           y_cursor_pos++;
-          x_cursor_pos = 0;
+          x_cursor_pos = X_PADDING;
         } else {
           x_cursor_pos++;
         }
@@ -466,8 +467,8 @@ void handle_bs_key(NodeBuffer **pages) {
       } else {
 
         x_cursor_pos--;
-        if (x_cursor_pos < 0)
-          x_cursor_pos = 0;
+        if (x_cursor_pos < X_PADDING)
+          x_cursor_pos = X_PADDING;
 
         display_char(
             y_cursor_pos, x_cursor_pos,
@@ -488,7 +489,7 @@ void handle_bs_key(NodeBuffer **pages) {
         if ((*pages)->buffer->vect_buff[i] == L'\n') {
           (*pages)->buffer->current_cu_pointer -= temp_counter;
           int j = (*pages)->buffer->current_cu_pointer - 1;
-          x_cursor_pos = 0;
+          x_cursor_pos = X_PADDING;
 
           while (j >= 0 && (*pages)->buffer->vect_buff[j] != L'\n') {
             x_cursor_pos++;
@@ -505,8 +506,8 @@ void handle_bs_key(NodeBuffer **pages) {
 
       (*pages)->buffer->current_cu_pointer--;
       x_cursor_pos--;
-      if (x_cursor_pos < 0)
-        x_cursor_pos = 0;
+      if (x_cursor_pos < X_PADDING)
+        x_cursor_pos = X_PADDING;
 
       display_char(
           y_cursor_pos, x_cursor_pos,
@@ -527,8 +528,8 @@ void handle_enter_key(NodeBuffer **pages) {
     next_buffer(pages);
     draw_buffer((*pages)->buffer, NO_COLOR);
 
-    y_cursor_pos = PADDING / 2;
-    x_cursor_pos = 0;
+    y_cursor_pos = Y_PADDING / 2;
+    x_cursor_pos = X_PADDING;
 
     do {
       if ((*pages)->buffer->vect_buff[(*pages)->buffer->current_cu_pointer] ==
@@ -546,7 +547,7 @@ void handle_enter_key(NodeBuffer **pages) {
 
   if (buffer_cu_char == L'\n' && !(*pages)->buffer->offset) { // end of the line
     y_cursor_pos++;
-    x_cursor_pos = 0;
+    x_cursor_pos = X_PADDING;
 
     do {
       (*pages)->buffer->current_cu_pointer++;
