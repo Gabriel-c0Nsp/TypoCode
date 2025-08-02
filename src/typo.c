@@ -1,6 +1,7 @@
 #define NCURSES_WIDECHAR 1
 
 #include <locale.h>
+#include <math.h>
 #include <ncurses.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -46,6 +47,7 @@ void close_file(FILE *file);
 
 // helper functions
 char *extract_file_name(char *file_path);
+int str_bytes_num(int number);
 
 // buffer related operations
 FileInformation get_file_information(FileInformation *file_info, FILE *file,
@@ -60,7 +62,7 @@ void next_buffer(NodeBuffer **pages);
 // drawing functions
 void draw_file_name();
 void draw_number_lines();
-void draw_page_number();
+void draw_page_number(Buffer *buffer);
 void draw_buffer(Buffer *buffer, attr_t attr);
 void display_char(int y, int x, wchar_t character, attr_t attr);
 
@@ -157,7 +159,7 @@ FILE *open_file(char *argv) {
   FILE *file;
 
   if ((file = fopen(argv, "r")) == NULL) {
-    printf("couldn't open file\nAborting the program...\n");
+    fprintf(stderr, "couldn't open file\nAborting the program...\n");
     exit(1);
   }
 
@@ -175,6 +177,10 @@ char *extract_file_name(char *file_path) {
     file_name = file_path;
 
   return file_name;
+}
+
+int str_bytes_num(int number) {
+  return (int)((ceil(log10(number)) + 2) * sizeof(char));
 }
 
 FileInformation get_file_information(FileInformation *file_info, FILE *file,
@@ -379,7 +385,7 @@ void draw_number_lines() {
   }
 }
 
-void draw_page_number() {
+void draw_page_number(Buffer *buffer) {
   for (int i = 0; i <= COLS; i++) {
     if (i == X_PADDING - 2)
       display_char(LINES - 3, i, L'┼', NO_COLOR);
@@ -391,6 +397,20 @@ void draw_page_number() {
     else
       display_char(LINES - 1, i, L'─', NO_COLOR);
   }
+
+  int number_size = str_bytes_num(buffer->page_number);
+  char current_page_number[number_size];
+  sprintf(current_page_number, "%d", buffer->page_number);
+
+  number_size = str_bytes_num(file_info.number_of_buffers);
+  char total_page_number[number_size];
+  sprintf(total_page_number, "%d", file_info.number_of_buffers);
+
+  mvaddstr(LINES - 2, X_PADDING, "Page ");
+  mvaddstr(LINES - 2, X_PADDING + 5, current_page_number);
+  mvaddstr(LINES - 2, X_PADDING + 5 + strlen(current_page_number), "/");
+  mvaddstr(LINES - 2, X_PADDING + 6 + strlen(current_page_number),
+           total_page_number);
 }
 
 void draw_buffer(Buffer *buffer, attr_t attr) {
@@ -422,7 +442,7 @@ void draw_buffer(Buffer *buffer, attr_t attr) {
 
   draw_file_name();
   draw_number_lines();
-  draw_page_number();
+  draw_page_number(buffer);
 
   y_cursor_pos = Y_PADDING / 2;
   x_cursor_pos = X_PADDING;

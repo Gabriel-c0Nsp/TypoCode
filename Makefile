@@ -1,4 +1,4 @@
-CFLAGS = -lncursesw -D_DEFAULT_SOURCE -D_XOPEN_SOURCE=600 -Wall -Wextra -o
+CFLAGS = -lncursesw -lm -D_DEFAULT_SOURCE -D_XOPEN_SOURCE=600 -Wall -Wextra -o
 CC = gcc
 
 all: make
