@@ -11,8 +11,10 @@
 #include <wchar.h>
 
 #define NO_COLOR A_NORMAL
+#define BOLD A_BOLD
 #define GREEN COLOR_PAIR(1)
 #define RED COLOR_PAIR(2)
+#define BLUE COLOR_PAIR(3)
 
 #define Y_PADDING 6
 #define X_PADDING 10
@@ -111,6 +113,7 @@ int main(int argc, char *argv[]) {
   start_color();
   init_pair(1, COLOR_GREEN, COLOR_BLACK);
   init_pair(2, COLOR_RED, COLOR_BLACK);
+  init_pair(3, COLOR_BLUE, COLOR_BLACK);
 
   cbreak();
   noecho();
@@ -373,8 +376,12 @@ void draw_file_name() {
       display_char(2, i, L'─', NO_COLOR);
   }
 
+  attron(BLUE);
   mvaddstr(1, X_PADDING, "File: ");
+  attroff(BLUE);
+  attron(BOLD);
   mvaddstr(1, X_PADDING + 6, file_info.file_name);
+  attroff(BOLD);
 }
 
 void draw_number_lines() {
@@ -406,11 +413,15 @@ void draw_page_number(Buffer *buffer) {
   char total_page_number[number_size];
   sprintf(total_page_number, "%d", file_info.number_of_buffers);
 
-  mvaddstr(LINES - 2, X_PADDING, "Page ");
-  mvaddstr(LINES - 2, X_PADDING + 5, current_page_number);
-  mvaddstr(LINES - 2, X_PADDING + 5 + strlen(current_page_number), "/");
-  mvaddstr(LINES - 2, X_PADDING + 6 + strlen(current_page_number),
+  attron(BLUE);
+  mvaddstr(LINES - 2, X_PADDING, "Page: ");
+  attroff(BLUE);
+  attron(BOLD);
+  mvaddstr(LINES - 2, X_PADDING + 6, current_page_number);
+  mvaddstr(LINES - 2, X_PADDING + 6 + strlen(current_page_number), "/");
+  mvaddstr(LINES - 2, X_PADDING + 7 + strlen(current_page_number),
            total_page_number);
+  attroff(BOLD);
 }
 
 void draw_buffer(Buffer *buffer, attr_t attr) {
