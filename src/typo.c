@@ -15,15 +15,22 @@
 #define GREEN COLOR_PAIR(1)
 #define RED COLOR_PAIR(2)
 #define BLUE COLOR_PAIR(3)
+#define YELLOW COLOR_PAIR(4)
 
 #define Y_PADDING 6
 #define X_PADDING 10
+
+typedef struct Range {
+  int start;
+  int end;
+} Range;
 
 typedef struct Buffer {
   int page_number;
   int current_cu_pointer;
   int offset;
   int size;
+  Range lines_range;
   wchar_t *vect_buff;
 } Buffer;
 
@@ -64,7 +71,7 @@ void next_buffer(NodeBuffer **pages);
 // drawing functions
 void draw_display_panel();
 void draw_file_name();
-void draw_number_lines();
+void draw_number_lines(Buffer *buffer);
 void draw_page_number(Buffer *buffer);
 void draw_buffer(Buffer *buffer, attr_t attr);
 void display_char(int y, int x, wchar_t character, attr_t attr);
@@ -115,6 +122,7 @@ int main(int argc, char *argv[]) {
   init_pair(1, COLOR_GREEN, COLOR_BLACK);
   init_pair(2, COLOR_RED, COLOR_BLACK);
   init_pair(3, COLOR_BLUE, COLOR_BLACK);
+  init_pair(4, COLOR_YELLOW, COLOR_BLACK);
 
   cbreak();
   noecho();
@@ -191,7 +199,7 @@ FileInformation get_file_information(FileInformation *file_info, FILE *file,
                                      char *file_name) {
   int number_of_characters = 0;
   wint_t file_char;
-  int number_of_lines = 1;
+  int number_of_lines = 0;
 
   while ((file_char = fgetwc(file)) != WEOF) {
     if (file_char == '\t') {
@@ -212,7 +220,7 @@ FileInformation get_file_information(FileInformation *file_info, FILE *file,
   }
 
   file_info->number_of_characters = number_of_characters;
-  file_info->number_of_lines = number_of_lines;
+  file_info->number_of_lines = number_of_lines - 1; // exclude the last \n
   file_info->file_name = file_name;
 
   int lines_per_buffer = LINES - Y_PADDING;
@@ -233,15 +241,17 @@ Buffer create_buffer(FILE *file) {
   int buffer_capacity = LINES - Y_PADDING;
   int current_lines = 0;
   int char_count = 0;
+  static int range_line_counter = 0;
 
   Buffer buffer;
+  buffer.lines_range.start = range_line_counter + 1;
   buffer.page_number = 0;
   buffer.current_cu_pointer = 0;
   buffer.offset = 0;
 
   long start_pos = ftell(file);
 
-  // Count how many characters the buffer needs to able to store
+  // count how many characters the buffer needs to able to store
   wint_t file_char;
 
   while (current_lines < buffer_capacity &&
@@ -254,10 +264,12 @@ Buffer create_buffer(FILE *file) {
 
     if ((wchar_t)file_char == L'\n') {
       current_lines++;
+      range_line_counter++;
     }
   }
 
   buffer.size = char_count;
+  buffer.lines_range.end = range_line_counter;
   buffer.vect_buff = calloc(buffer.size + 1, sizeof(wchar_t));
 
   if (buffer.vect_buff == NULL) {
@@ -399,7 +411,16 @@ void draw_file_name() {
   attroff(BOLD);
 }
 
-void draw_number_lines() {}
+void draw_number_lines(Buffer *buffer) {
+  int current_line = Y_PADDING / 2;
+  for (int i = buffer->lines_range.start; i <= buffer->lines_range.end; i++) {
+    attron(YELLOW);
+    move(current_line, 0);
+    current_line++;
+    printw("%8d", i);
+    attroff(YELLOW);
+  }
+}
 
 void draw_page_number(Buffer *buffer) {
   int number_size = str_bytes_num(buffer->page_number);
@@ -422,8 +443,6 @@ void draw_page_number(Buffer *buffer) {
 }
 
 void draw_buffer(Buffer *buffer, attr_t attr) {
-  // TODO: Draw line numbers
-
   clear();
   move(Y_PADDING, X_PADDING);
 
@@ -445,12 +464,11 @@ void draw_buffer(Buffer *buffer, attr_t attr) {
       x_pos = X_PADDING;
     }
   }
-
   attroff(attr);
 
+  draw_number_lines(buffer);
   draw_display_panel();
   draw_file_name();
-  draw_number_lines();
   draw_page_number(buffer);
 
   y_cursor_pos = Y_PADDING / 2;
