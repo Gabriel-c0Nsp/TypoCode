@@ -62,6 +62,7 @@ void previous_buffer(NodeBuffer **pages);
 void next_buffer(NodeBuffer **pages);
 
 // drawing functions
+void draw_display_panel();
 void draw_file_name();
 void draw_number_lines();
 void draw_page_number(Buffer *buffer);
@@ -363,19 +364,33 @@ void next_buffer(NodeBuffer **pages) {
   return;
 }
 
-void draw_file_name() {
+void draw_display_panel() {
   for (int i = 0; i <= COLS; i++) {
-    if (i == X_PADDING - 2)
+    if (i == X_PADDING - 2) {
       display_char(0, i, L'┬', NO_COLOR);
-    else
+      display_char(LINES - 3, i, L'┼', NO_COLOR);
+    } else {
       display_char(0, i, L'─', NO_COLOR);
+      display_char(LINES - 3, i, L'─', NO_COLOR);
+    }
 
-    if (i == X_PADDING - 2)
+    if (i == X_PADDING - 2) {
       display_char(2, i, L'┼', NO_COLOR);
-    else
+      display_char(LINES - 1, i, L'┴', NO_COLOR);
+    } else {
       display_char(2, i, L'─', NO_COLOR);
+      display_char(LINES - 1, i, L'─', NO_COLOR);
+    }
   }
 
+  for (int i = 1; i <= LINES; i++) {
+    if (i == 2 || i == LINES - 1 || i == LINES - 3)
+      continue;
+    display_char(i, X_PADDING - 2, L'│', NO_COLOR);
+  }
+}
+
+void draw_file_name() {
   attron(BLUE);
   mvaddstr(1, X_PADDING, "File: ");
   attroff(BLUE);
@@ -384,27 +399,9 @@ void draw_file_name() {
   attroff(BOLD);
 }
 
-void draw_number_lines() {
-  for (int i = 1; i <= LINES; i++) {
-    if (i == 2 || i == LINES - 1 || i == LINES - 3)
-      continue;
-    display_char(i, X_PADDING - 2, L'│', NO_COLOR);
-  }
-}
+void draw_number_lines() {}
 
 void draw_page_number(Buffer *buffer) {
-  for (int i = 0; i <= COLS; i++) {
-    if (i == X_PADDING - 2)
-      display_char(LINES - 3, i, L'┼', NO_COLOR);
-    else
-      display_char(LINES - 3, i, L'─', NO_COLOR);
-
-    if (i == X_PADDING - 2)
-      display_char(LINES - 1, i, L'┴', NO_COLOR);
-    else
-      display_char(LINES - 1, i, L'─', NO_COLOR);
-  }
-
   int number_size = str_bytes_num(buffer->page_number);
   char current_page_number[number_size];
   sprintf(current_page_number, "%d", buffer->page_number);
@@ -451,6 +448,7 @@ void draw_buffer(Buffer *buffer, attr_t attr) {
 
   attroff(attr);
 
+  draw_display_panel();
   draw_file_name();
   draw_number_lines();
   draw_page_number(buffer);
