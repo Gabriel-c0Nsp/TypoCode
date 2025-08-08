@@ -763,6 +763,6 @@ void free_pages(NodeBuffer **pages) {
 void exit_game(int exit_status, FILE *file_path, NodeBuffer **pages) {
   endwin();
   close_file(file_path);
-  free_pages(pages);
+  if (pages != NULL) free_pages(pages);
   exit(exit_status);
 }
