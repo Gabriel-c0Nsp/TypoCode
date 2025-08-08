@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
 
   FILE *file = open_file(argv[1]);
 
-  initscr();
+  initscr(); // initialize a window
 
   if (!has_colors()) {
     endwin();
@@ -215,8 +215,8 @@ FileInformation get_file_information(FileInformation *file_info, FILE *file,
 
   // if the file is empty
   if (number_of_characters == 0) {
-    number_of_lines = 0;
-    // TODO: Exit game, there's nothing to do!
+    printf("You can't play with a blank file!\n");
+    exit_game(0, file, NULL);
   }
 
   file_info->number_of_characters = number_of_characters;
@@ -763,6 +763,7 @@ void free_pages(NodeBuffer **pages) {
 void exit_game(int exit_status, FILE *file_path, NodeBuffer **pages) {
   endwin();
   close_file(file_path);
-  if (pages != NULL) free_pages(pages);
+  if (pages != NULL)
+    free_pages(pages);
   exit(exit_status);
 }
