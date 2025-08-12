@@ -5,23 +5,6 @@ all: make
 
 make: src/typo.c
 	@$(CC) src/typo.c $(CFLAGS) src/typo
-	@src/typo
-
-file1: src/typo.c
-	@$(CC) src/typo.c $(CFLAGS) src/typo
-	@src/typo src/ArquivoTeste.java
-
-file2: src/typo.c
-	@$(CC) src/typo.c $(CFLAGS) src/typo
-	@src/typo src/arquivo_teste.lua
-
-file3: src/typo.c
-	@$(CC) src/typo.c $(CFLAGS) src/typo
-	@src/typo ~/repos/Lua-Generate/lg/modules/config/config.lua
-
-file4: src/typo.c
-	@$(CC) src/typo.c $(CFLAGS) src/typo
-	@src/typo src/teste_4.lua
 
 clean:
 	rm -f src/typo
