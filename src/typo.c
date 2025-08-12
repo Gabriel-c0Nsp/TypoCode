@@ -86,6 +86,10 @@ void handle_wrong_key(wchar_t user_input, Buffer *buffer);
 void handle_right_key(wchar_t user_input, Buffer *buffer);
 void handle_input(wchar_t user_input, FILE *file, NodeBuffer **pages);
 
+// timer functions
+void start_timer();
+void stop_timer();
+
 // close game functions
 void check_end_game(FILE *file, NodeBuffer **pages);
 void free_pages(NodeBuffer **pages);
@@ -94,6 +98,10 @@ void exit_game(int exit_status, FILE *file_path, NodeBuffer **pages);
 // cursor position global variables
 int y_cursor_pos = Y_PADDING;
 int x_cursor_pos = X_PADDING;
+
+// game state
+static struct timespec start;
+int started_test = 0;
 
 FileInformation file_info;
 
@@ -729,6 +737,9 @@ void handle_right_key(wchar_t user_input, Buffer *buffer) {
 }
 
 void handle_input(wchar_t user_input, FILE *file, NodeBuffer **pages) {
+  if (!started_test)
+    start_timer();
+
   wchar_t buffer_cu_char =
       (*pages)->buffer->vect_buff[(*pages)->buffer->current_cu_pointer];
 
@@ -748,9 +759,28 @@ void handle_input(wchar_t user_input, FILE *file, NodeBuffer **pages) {
   }
 }
 
+void start_timer() {
+  clock_gettime(CLOCK_MONOTONIC, &start);
+  started_test = 1;
+}
+
+void stop_timer() {
+  struct timespec end;
+  clock_gettime(CLOCK_MONOTONIC, &end);
+
+  long seconds = end.tv_sec - start.tv_sec;
+  long minutes = seconds / 60;
+  seconds %= 60;
+
+  endwin();
+  printf("Finished in: %02ld:%02ld\n", minutes, seconds);
+}
+
 void check_end_game(FILE *file, NodeBuffer **pages) {
   if ((*pages)->buffer->page_number == file_info.number_of_buffers &&
       (*pages)->buffer->current_cu_pointer == (*pages)->buffer->size - 1) {
+
+    stop_timer();
     exit_game(0, file, pages);
   }
 }
