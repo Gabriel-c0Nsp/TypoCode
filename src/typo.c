@@ -87,6 +87,7 @@ void handle_right_key(wchar_t user_input, Buffer *buffer);
 void handle_input(wchar_t user_input, FILE *file, NodeBuffer **pages);
 
 // close game functions
+void check_end_game(FILE *file, NodeBuffer **pages);
 void free_pages(NodeBuffer **pages);
 void exit_game(int exit_status, FILE *file_path, NodeBuffer **pages);
 
@@ -743,6 +744,14 @@ void handle_input(wchar_t user_input, FILE *file, NodeBuffer **pages) {
     handle_wrong_key(user_input, (*pages)->buffer);
   } else if (user_input == buffer_cu_char) {
     handle_right_key(user_input, (*pages)->buffer);
+    check_end_game(file, pages);
+  }
+}
+
+void check_end_game(FILE *file, NodeBuffer **pages) {
+  if ((*pages)->buffer->page_number == file_info.number_of_buffers &&
+      (*pages)->buffer->current_cu_pointer == (*pages)->buffer->size - 1) {
+    exit_game(0, file, pages);
   }
 }
 
