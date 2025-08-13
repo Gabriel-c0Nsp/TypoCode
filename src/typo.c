@@ -140,6 +140,7 @@ int main(int argc, char *argv[]) {
   set_pages(&pages, file);
 
   if (pages == NULL) {
+    endwin();
     fprintf(stderr, "Something went wrong while allocating memory for "
                     "buffers!\nAborting...\n");
     exit_game(1, file, &pages);
@@ -158,6 +159,7 @@ int main(int argc, char *argv[]) {
 void logtf(const char *fmt, ...) {
   FILE *log_file = fopen("log.txt", "a");
   if (!log_file) {
+    endwin();
     fprintf(
         stderr,
         "Failed to open log file: log.txt\nAborting for security reasons...\n");
@@ -226,8 +228,9 @@ FileInformation get_file_information(FileInformation *file_info, FILE *file,
 
   // if the file is empty
   if (number_of_characters == 0) {
-    printf("You can't play with a blank file!\n");
-    exit_game(0, file, NULL);
+    endwin();
+    fprintf(stderr, "You can't play with a blank file!\n");
+    exit_game(1, file, NULL);
   }
 
   file_info->number_of_characters = number_of_characters;
@@ -284,6 +287,7 @@ Buffer create_buffer(FILE *file) {
   buffer.vect_buff = calloc(buffer.size + 1, sizeof(wchar_t));
 
   if (buffer.vect_buff == NULL) {
+    endwin();
     fprintf(stderr, "Couldn't allocate memory for the buffer\nAborting...\n");
     exit_game(1, file, NULL);
   }
@@ -323,6 +327,7 @@ NodeBuffer *create_buffer_node(FILE *file) {
   NodeBuffer *new_node = malloc(sizeof(NodeBuffer));
 
   if (new_node == NULL) {
+    endwin();
     fprintf(stderr, "Couldn't allocate memory for a new node in NodeBuffer "
                     "doubly-linked list!\nAborting...\n");
     exit_game(1, file, NULL);
@@ -330,6 +335,7 @@ NodeBuffer *create_buffer_node(FILE *file) {
 
   Buffer *new_buffer = malloc(sizeof(Buffer));
   if (new_buffer == NULL) {
+    endwin();
     fprintf(stderr, "Couldn't allocate memory for a new Buffer\nAborting...\n");
     exit_game(1, file, NULL);
   }
@@ -505,6 +511,7 @@ wchar_t get_user_input(FILE *file, NodeBuffer **pages) {
   int result = get_wch(&user_input);
 
   if (result == ERR) {
+    endwin();
     fprintf(stderr, "Some error occurred while typing\n");
     exit_game(1, file, pages);
   }
@@ -774,7 +781,7 @@ void stop_timer() {
   long minutes = seconds / 60;
   seconds %= 60;
 
-  endwin(); // simple way to get to the stdout (maybe kinda lazy)
+  endwin(); // simple way to get to the stdout (maybe I'm being kinda lazy here)
   printf("Finished in: %02ld:%02ld\n", minutes, seconds);
 }
 
@@ -802,7 +809,7 @@ void free_pages(NodeBuffer **pages) {
 }
 
 void exit_game(int exit_status, FILE *file_path, NodeBuffer **pages) {
-  endwin();
+  endwin(); // make sure to close the window
   close_file(file_path);
   if (pages != NULL)
     free_pages(pages);
