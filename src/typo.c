@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
   setlocale(LC_ALL, ""); // important so the widechar ncurses can work
 
   if (argc < 2) {
-    printf("You should specify a file!\n");
+    fprintf(stderr, "You should specify a file!\n");
     exit(1);
   }
 
@@ -121,10 +121,9 @@ int main(int argc, char *argv[]) {
   initscr(); // initialize a window
 
   if (!has_colors()) {
-    endwin();
     fprintf(stderr,
             "Your terminal emulator must support colors to play this game!\n");
-    exit(1);
+    exit_game(1, file, NULL);
   }
 
   start_color();
@@ -143,8 +142,7 @@ int main(int argc, char *argv[]) {
   if (pages == NULL) {
     fprintf(stderr, "Something went wrong while allocating memory for "
                     "buffers!\nAborting...\n");
-    endwin();
-    exit(1);
+    exit_game(1, file, &pages);
   }
 
   draw_buffer(pages->buffer, NO_COLOR);
@@ -160,9 +158,10 @@ int main(int argc, char *argv[]) {
 void logtf(const char *fmt, ...) {
   FILE *log_file = fopen("log.txt", "a");
   if (!log_file) {
-    printf(
+    fprintf(
+        stderr,
         "Failed to open log file: log.txt\nAborting for security reasons...\n");
-    exit(1);
+    exit_game(1, NULL, NULL);
   }
 
   time_t now = time(NULL);
@@ -180,14 +179,17 @@ FILE *open_file(char *argv) {
   FILE *file;
 
   if ((file = fopen(argv, "r")) == NULL) {
-    fprintf(stderr, "couldn't open file\nAborting the program...\n");
+    fprintf(stderr, "couldn't open file\nAborting...\n");
     exit(1);
   }
 
   return file;
 }
 
-void close_file(FILE *file) { fclose(file); }
+void close_file(FILE *file) {
+  if (file != NULL)
+    fclose(file);
+}
 
 char *extract_file_name(char *file_path) {
   char *file_name = strrchr(file_path, '/');
@@ -282,8 +284,8 @@ Buffer create_buffer(FILE *file) {
   buffer.vect_buff = calloc(buffer.size + 1, sizeof(wchar_t));
 
   if (buffer.vect_buff == NULL) {
-    fprintf(stderr, "Erro ao alocar memória para o buffer\n");
-    exit(1);
+    fprintf(stderr, "Couldn't allocate memory for the buffer\nAborting...\n");
+    exit_game(1, file, NULL);
   }
 
   fseek(file, start_pos, SEEK_SET);
@@ -323,13 +325,13 @@ NodeBuffer *create_buffer_node(FILE *file) {
   if (new_node == NULL) {
     fprintf(stderr, "Couldn't allocate memory for a new node in NodeBuffer "
                     "doubly-linked list!\nAborting...\n");
-    exit(1);
+    exit_game(1, file, NULL);
   }
 
   Buffer *new_buffer = malloc(sizeof(Buffer));
   if (new_buffer == NULL) {
     fprintf(stderr, "Couldn't allocate memory for a new Buffer\nAborting...\n");
-    exit(1);
+    exit_game(1, file, NULL);
   }
 
   *new_buffer = create_buffer(file);
@@ -772,7 +774,7 @@ void stop_timer() {
   long minutes = seconds / 60;
   seconds %= 60;
 
-  endwin();
+  endwin(); // simple way to get to the stdout (maybe kinda lazy)
   printf("Finished in: %02ld:%02ld\n", minutes, seconds);
 }
 
