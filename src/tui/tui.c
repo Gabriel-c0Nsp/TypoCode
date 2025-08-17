@@ -83,15 +83,18 @@ void draw_buffer(Buffer *buffer, attr_t attr) {
   for (int i = 0; i < buffer->size; i++) {
     wchar_t file_char = buffer->vect_buff[i];
 
-    cchar_t ch;
-    setcchar(&ch, &file_char, 0, 0, NULL);
-
-    mvadd_wch(y_pos, x_pos, &ch);
-    x_pos++;
-
     if (file_char == L'\n') {
       y_pos++;
       x_pos = X_PADDING;
+      // depending on the setup, the previous letter was drawn instead of \n...
+      // (which is funny)
+      mvaddch(y_pos, x_pos, ' '); // just draw a blank space instead :)
+    } else {
+      cchar_t ch;
+      setcchar(&ch, &file_char, 0, 0, NULL);
+
+      mvadd_wch(y_pos, x_pos, &ch);
+      x_pos++;
     }
   }
   attroff(attr);
