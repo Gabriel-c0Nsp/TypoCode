@@ -15,6 +15,9 @@ $(BIN): $(OBJ)
 %.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDE_DIRS) -c $< -o $@
 
+install: all
+	sudo cp src/typo /usr/local/bin
+
 # clean (objects)
 clean:
 	rm -f $(OBJ)
