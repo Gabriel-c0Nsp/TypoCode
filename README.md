@@ -27,3 +27,10 @@ Note that `TypoCode` requires the following dependencies to be installed on your
    ```bash
    typo src/typo.c
    ```
+
+## References:
+- **Typon**: https://github.com/ihsuy/Typon
+- **bat**: https://github.com/sharkdp/bat
+- **Monkeytype**: https://github.com/monkeytypegame/monkeytype
+- **code-racer**: https://github.com/webdevcody/code-racer
+- **SpeedTyper.dev**: https://www.speedtyper.dev
