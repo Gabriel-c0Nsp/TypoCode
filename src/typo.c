@@ -3,7 +3,9 @@
 #include <locale.h>
 #include <ncurses.h>
 #include <stdlib.h>
+#include <string.h>
 
+#include "args/args.h"
 #include "endgame/endgame.h"
 #include "file/file.h"
 #include "input/input.h"
@@ -12,10 +14,8 @@
 int main(int argc, char *argv[]) {
   setlocale(LC_ALL, ""); // important so the widechar ncurses can work
 
-  if (argc < 2) {
-    fprintf(stderr, "You should specify a file!\n");
-    exit(1);
-  }
+  check_enough_args(argc);
+  check_argument_flags(argv);
 
   char *file_name = argv[1];
   file_name = extract_file_name(file_name);

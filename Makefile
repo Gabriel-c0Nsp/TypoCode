@@ -1,8 +1,8 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -lncursesw -lm -D_DEFAULT_SOURCE -D_XOPEN_SOURCE=600
-INCLUDE_DIRS = -Isrc/buffer -Isrc/endgame -Isrc/file -Isrc/gamestate -Isrc/input -Isrc/log -Isrc/timer -Isrc/tui
+INCLUDE_DIRS = -Isrc/buffer -Isrc/endgame -Isrc/file -Isrc/gamestate -Isrc/input -Isrc/log -Isrc/timer -Isrc/tui -Isrc/args
 
-OBJ = src/buffer/buffer.o src/endgame/endgame.o src/file/file.o src/gamestate/gamestate.o \
+OBJ = src/args/args.o src/buffer/buffer.o src/endgame/endgame.o src/file/file.o src/gamestate/gamestate.o \
       src/input/input.o src/log/log.o src/timer/timer.o src/tui/tui.o src/typo.o
 
 BIN = src/typo
