@@ -18,7 +18,7 @@ char *help_message =
 
     "[file path]\t runs the typing game using the provided file\n"
     "-v, --version\t display version information and exit\n"
-    "-h, --help\t display this help messagem and exit\n";
+    "-h, --help\t display this help message and exit\n";
 
 void check_enough_args(int argc) {
   if (argc < 2) {
